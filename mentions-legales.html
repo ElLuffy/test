@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Mentions légales – SPV Peinture Vendéenne</title>
+  <meta name="robots" content="noindex"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Inter:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --blue:#1f3a8a;
+      --blue-light:#2a4db5;
+      --font-title:'Montserrat',sans-serif;
+      --font-body:'Inter',sans-serif;
+      --transition:.3s cubic-bezier(.4,0,.2,1);
+    }
+    [data-theme="dark"]{
+      --bg:#0e0e0e;
+      --bg-2:#141414;
+      --bg-card:#181818;
+      --border:rgba(255,255,255,.07);
+      --border-strong:rgba(255,255,255,.14);
+      --text-primary:#fff;
+      --text-secondary:rgba(255,255,255,.55);
+      --text-muted:rgba(255,255,255,.3);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:var(--font-body);
+      background:var(--bg);
+      color:var(--text-primary);
+      line-height:1.6;
+      overflow-x:hidden;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    a{text-decoration:none;color:inherit}
+
+    /* ── NAV ── */
+    nav{
+      position:sticky;top:0;z-index:100;
+      background:rgba(14,14,14,.92);
+      border-bottom:1px solid var(--border);
+      backdrop-filter:blur(16px);
+      -webkit-backdrop-filter:blur(16px);
+    }
+    .nav-inner{
+      display:flex;align-items:center;justify-content:space-between;
+      height:72px;padding:0 2rem;max-width:1200px;margin:0 auto;
+    }
+    .nav-logo{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+    .logo-icon-wrap{
+      width:40px;height:40px;background:var(--blue);border-radius:7px;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+    }
+    .logo-icon-wrap svg{width:30px;height:30px;color:#fff}
+    .logo-text{display:flex;flex-direction:column;line-height:1}
+    .logo-spv{font-family:var(--font-title);font-weight:900;font-size:1.15rem;letter-spacing:.04em;color:#fff}
+    .logo-sub{font-family:var(--font-title);font-size:.5rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)}
+    .nav-back{
+      display:inline-flex;align-items:center;gap:.5rem;
+      font-size:.82rem;font-weight:500;color:var(--text-secondary);
+      transition:color var(--transition);
+    }
+    .nav-back:hover{color:#fff}
+    .nav-back svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+    /* ── HERO ── */
+    .page-hero{
+      padding:5rem 2rem 4rem;
+      max-width:1200px;margin:0 auto;
+    }
+    .page-badge{
+      display:inline-flex;align-items:center;gap:.5rem;
+      font-family:var(--font-title);font-size:.65rem;font-weight:700;
+      letter-spacing:.18em;text-transform:uppercase;color:var(--blue);
+      margin-bottom:1.5rem;
+    }
+    .page-badge::before{
+      content:'';width:20px;height:1px;background:var(--blue);
+    }
+    .page-title{
+      font-family:var(--font-title);font-weight:800;
+      font-size:clamp(2rem,4vw,3rem);line-height:1.05;
+      letter-spacing:-.025em;margin-bottom:1rem;
+    }
+    .page-subtitle{
+      font-size:.9rem;color:var(--text-secondary);
+      max-width:480px;
+    }
+
+    /* ── CONTENT ── */
+    .mentions-grid{
+      max-width:1200px;margin:0 auto;
+      padding:0 2rem 6rem;
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:1.5rem;
+    }
+    .mention-card{
+      background:var(--bg-card);
+      border:1px solid var(--border);
+      border-radius:12px;
+      padding:2rem;
+      transition:border-color var(--transition);
+    }
+    .mention-card:hover{border-color:var(--border-strong)}
+    .mention-card.full{grid-column:1/-1}
+    .mention-card-icon{
+      width:36px;height:36px;
+      background:rgba(31,58,138,.15);
+      border:1px solid rgba(31,58,138,.25);
+      border-radius:8px;
+      display:flex;align-items:center;justify-content:center;
+      margin-bottom:1.25rem;
+    }
+    .mention-card-icon svg{width:18px;height:18px;stroke:var(--blue);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+    .mention-card h2{
+      font-family:var(--font-title);font-weight:700;
+      font-size:.85rem;letter-spacing:.08em;text-transform:uppercase;
+      color:var(--text-muted);margin-bottom:1rem;
+    }
+    .mention-row{
+      display:flex;flex-direction:column;gap:.5rem;
+    }
+    .mention-line{
+      display:flex;flex-direction:column;gap:.15rem;
+      padding:.6rem 0;
+      border-bottom:1px solid var(--border);
+    }
+    .mention-line:last-child{border-bottom:none}
+    .mention-label{
+      font-size:.65rem;font-weight:600;letter-spacing:.1em;
+      text-transform:uppercase;color:var(--text-muted);
+    }
+    .mention-value{
+      font-size:.9rem;color:var(--text-primary);font-weight:500;
+    }
+    .mention-value a{
+      color:#6b9ef8;
+      transition:color var(--transition);
+    }
+    .mention-value a:hover{color:#fff}
+    .mention-body{
+      font-size:.88rem;color:var(--text-secondary);line-height:1.75;
+    }
+    .mention-body p{margin-bottom:.75rem}
+    .mention-body p:last-child{margin-bottom:0}
+
+    /* Séparateur ─ */
+    .divider{
+      max-width:1200px;margin:0 auto 1.5rem;padding:0 2rem;
+    }
+    .divider hr{border:none;border-top:1px solid var(--border)}
+
+    /* ── FOOTER ── */
+    footer{
+      margin-top:auto;
+      background:#0a0a0a;
+      border-top:1px solid rgba(255,255,255,.06);
+      padding:3rem 2rem;
+    }
+    .footer-inner{
+      max-width:1200px;margin:0 auto;
+      display:flex;align-items:center;justify-content:space-between;
+      flex-wrap:wrap;gap:2rem;
+    }
+    .footer-logo img,.footer-logo svg{
+      height:32px;width:auto;
+      /* Le logo SVG est noir — on le rend blanc en dark mode */
+      filter:invert(1);
+      opacity:.6;
+      transition:opacity var(--transition);
+    }
+    .footer-logo:hover img,.footer-logo:hover svg{opacity:1}
+    .footer-right{text-align:right}
+    .footer-right p{font-size:.75rem;color:rgba(255,255,255,.25)}
+    .footer-right a{
+      font-size:.72rem;color:rgba(255,255,255,.25);
+      text-decoration:underline;text-underline-offset:3px;
+      transition:color var(--transition);
+    }
+    .footer-right a:hover{color:rgba(255,255,255,.6)}
+
+    /* ── RESPONSIVE ── */
+    @media(max-width:768px){
+      .mentions-grid{grid-template-columns:1fr}
+      .mention-card.full{grid-column:1}
+      .footer-inner{flex-direction:column;align-items:flex-start}
+      .footer-right{text-align:left}
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">
+      <div class="logo-icon-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      </div>
+      <div class="logo-text">
+        <span class="logo-spv">SPV</span>
+        <span class="logo-sub">Soc. Peinture Vendéenne</span>
+      </div>
+    </a>
+    <a href="index.html" class="nav-back">
+      <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      Retour au site
+    </a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="page-hero">
+  <div class="page-badge">Informations légales</div>
+  <h1 class="page-title">Mentions légales</h1>
+  <p class="page-subtitle">Conformément à la loi n° 2004‑575 du 21 juin 2004 pour la confiance dans l'économie numérique.</p>
+</div>
+
+<!-- CONTENT -->
+<div class="mentions-grid">
+
+  <!-- Éditeur -->
+  <div class="mention-card">
+    <div class="mention-card-icon">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </div>
+    <h2>Éditeur du site</h2>
+    <div class="mention-row">
+      <div class="mention-line">
+        <span class="mention-label">Raison sociale</span>
+        <span class="mention-value">SPV – Société de Peinture Vendéenne</span>
+      </div>
+      <div class="mention-line">
+        <span class="mention-label">Forme juridique</span>
+        <span class="mention-value">Entreprise individuelle</span>
+      </div>
+      <div class="mention-line">
+        <span class="mention-label">Siège social</span>
+        <span class="mention-value">Vendée (85), France</span>
+      </div>
+      <div class="mention-line">
+        <span class="mention-label">Téléphone</span>
+        <span class="mention-value"><a href="tel:0612243019">06 12 24 30 19</a></span>
+      </div>
+      <div class="mention-line">
+        <span class="mention-label">Email</span>
+        <span class="mention-value"><a href="mailto:contact@spv-peinture.fr">contact@spv-peinture.fr</a></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hébergement -->
+  <div class="mention-card">
+    <div class="mention-card-icon">
+      <svg viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </div>
+    <h2>Hébergement</h2>
+    <div class="mention-row">
+      <div class="mention-line">
+        <span class="mention-label">Hébergeur</span>
+        <span class="mention-value">GitHub Pages</span>
+      </div>
+      <div class="mention-line">
+        <span class="mention-label">Société</span>
+        <span class="mention-value">GitHub, Inc.</span>
+      </div>
+      <div class="mention-line">
+        <span class="mention-label">Adresse</span>
+        <span class="mention-value">88 Colin P. Kelly Jr. Street<br>San Francisco, CA 94107 – USA</span>
+      </div>
+      <div class="mention-line">
+        <span class="mention-label">Site</span>
+        <span class="mention-value"><a href="https://pages.github.com" target="_blank" rel="noopener">pages.github.com</a></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Propriété intellectuelle -->
+  <div class="mention-card">
+    <div class="mention-card-icon">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M14.31 8l.67-3.5M9.37 8L8.7 4.5M17.5 10H6.5M16.5 14H7.5M10.63 16l-.67 3.5M15.67 16l.66 3.5"/></svg>
+    </div>
+    <h2>Propriété intellectuelle</h2>
+    <div class="mention-body">
+      <p>L'ensemble du contenu de ce site (textes, images, logo, visuels) est la propriété exclusive de SPV – Société de Peinture Vendéenne ou de ses partenaires.</p>
+      <p>Toute reproduction, distribution ou utilisation sans autorisation préalable écrite est strictement interdite.</p>
+    </div>
+  </div>
+
+  <!-- Cookies & données -->
+  <div class="mention-card">
+    <div class="mention-card-icon">
+      <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    </div>
+    <h2>Cookies & données</h2>
+    <div class="mention-body">
+      <p>Ce site utilise des cookies techniques à des fins de mesure d'audience interne (analytics). Aucune donnée n'est transmise à des tiers ni utilisée à des fins publicitaires.</p>
+      <p>Vous pouvez accepter ou refuser ces cookies lors de votre première visite via le bandeau dédié, ou à tout moment via le lien "Gérer les cookies" en bas de page.</p>
+      <p>Conformément au RGPD, vous disposez d'un droit d'accès, de rectification et de suppression de vos données en contactant : <a href="mailto:contact@spv-peinture.fr">contact@spv-peinture.fr</a></p>
+    </div>
+  </div>
+
+  <!-- Limitation de responsabilité -->
+  <div class="mention-card full">
+    <div class="mention-card-icon">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    </div>
+    <h2>Limitation de responsabilité</h2>
+    <div class="mention-body">
+      <p>SPV s'efforce d'assurer l'exactitude et la mise à jour des informations diffusées sur ce site. Cependant, SPV ne peut garantir l'exactitude, la précision ou l'exhaustivité des informations mises à disposition. En conséquence, SPV décline toute responsabilité pour toute imprécision, inexactitude ou omission portant sur des informations disponibles sur ce site.</p>
+      <p>SPV se réserve le droit de corriger, à tout moment et sans préavis, le contenu de ce site. La responsabilité de SPV ne peut être engagée en cas de force majeure ou du fait imprévisible et insurmontable d'un tiers.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER avec logo -->
+<footer>
+  <div class="footer-inner">
+    <a href="index.html" class="footer-logo" title="Retour à l'accueil SPV">
+      <img src="Logo_SPV_horizontal.svg" alt="SPV – Société de Peinture Vendéenne"/>
+    </a>
+    <div class="footer-right">
+      <p>© 2026 SPV – Société de Peinture Vendéenne. Tous droits réservés.</p>
+      <a href="index.html#cookieRevoke" onclick="window.opener?.document.getElementById('cookieRevoke')?.click()">Gérer les cookies</a>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>
