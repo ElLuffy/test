@@ -815,8 +815,11 @@ function renderVisitors(S, E, V){
   tbody.innerHTML = S.slice(0,50).map(s=>{
     const convd   = E.some(e=>e.session_id===s.session_id && e.event_name==="form_submit");
     const isNew   = V.find(v=>v.visitor_id===s.visitor_id && v.is_new);
-    const scrollE = E.filter(e=>e.session_id===s.session_id && e.event_name==="scroll");
-    const maxScroll = scrollE.length ? Math.max(...scrollE.map(e=>parseMeta(e).milestone||0)) : 0;
+    const scrollE  = E.filter(e=>e.session_id===s.session_id && e.event_name==="scroll");
+    const pvE      = E.filter(e=>e.session_id===s.session_id && e.event_name==="page_view");
+    let maxScroll  = 0;
+    scrollE.forEach(e=>{ const m=parseMeta(e).milestone||e.scroll_depth||0; if(m>maxScroll) maxScroll=m; });
+    pvE.forEach(e=>{ if((e.scroll_depth||0)>maxScroll) maxScroll=e.scroll_depth; });
     return `<tr>
       <td class="mono" style="font-size:.65rem">${fmtShort(s.started_at)}</td>
       <td>${deviceIcon(s.device_type)} ${s.device_type||"—"}</td>
@@ -838,7 +841,6 @@ function renderConversion(S, E){
   const rate        = total > 0 ? ((conv/total)*100).toFixed(1) : 0;
 
   // Funnel: sessions → page_view → scroll 50% → form_submit
-  const pvSess    = new Set(E.filter(e=>e.event_name==="page_view").map(e=>e.session_id)).size;
   const sc50Sess  = new Set(E.filter(e=>e.event_name==="scroll" && parseMeta(e).milestone>=50).map(e=>e.session_id)).size;
   // Mettre à jour les KPI cards de conversion
   const cf = document.getElementById("convForms");
@@ -848,33 +850,31 @@ function renderConversion(S, E){
   if(cv) cv.textContent = total;
   if(cr) cr.textContent = rate + "%";
 
-  // Funnel → canvas convChart
-  buildChart("convChart","bar",
-    ["Sessions","Page vue","Scroll 50%","Conversion"],
-    [total, pvSess, sc50Sess, conv],
-    "Sessions","#1f3a8a"
-  );
-
-  // Funnel texte → div#funnelView
+  // Funnel → div#funnelView (sans "page vue" — redondant)
   const fv = document.getElementById("funnelView");
   if(fv){
     const steps = [
-      {label:"Sessions totales", val:total, color:"#6b9ef8"},
-      {label:"Ont vu une page",  val:pvSess, color:"#1f3a8a"},
-      {label:"Scroll > 50%",     val:sc50Sess, color:"#f0cc4e"},
-      {label:"Ont converti",     val:conv, color:"#22c55e"},
+      {label:"Sessions totales", val:total,    color:"#6b9ef8", icon:"👥"},
+      {label:"Scroll > 50%",     val:sc50Sess, color:"#f0cc4e", icon:"📜"},
+      {label:"Contact (CTA)",    val:new Set(E.filter(e=>e.event_name==="cta_click").map(e=>e.session_id)).size, color:"#fb923c", icon:"📞"},
+      {label:"Ont converti",     val:conv,     color:"#22c55e", icon:"✅"},
     ];
     const maxV = total || 1;
-    fv.innerHTML = steps.map(s=>`
-      <div style="margin-bottom:.6rem">
-        <div style="display:flex;justify-content:space-between;margin-bottom:.25rem">
-          <span style="font-size:.72rem;color:var(--txt)">${s.label}</span>
-          <span style="font-size:.72rem;font-family:var(--font-mono);color:var(--txt2)">${s.val} <small style="opacity:.5">(${maxV>0?((s.val/maxV)*100).toFixed(0):0}%)</small></span>
+    fv.innerHTML = steps.map((s,i)=>{
+      const barW = Math.round((s.val/maxV)*100);
+      const pct  = ((s.val/maxV)*100).toFixed(0);
+      const drop = i>0 ? `<small style="color:var(--txt3);margin-left:.4rem">-${(100-pct).toFixed(0)}%</small>` : "";
+      return `<div style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.35rem">
+          <span style="font-size:.85rem">${s.icon}</span>
+          <span style="font-size:.73rem;font-weight:600;color:var(--txt);flex:1">${s.label}${drop}</span>
+          <span style="font-size:.72rem;font-family:var(--font-mono);color:var(--txt2)">${s.val} <small style="opacity:.5">(${pct}%)</small></span>
         </div>
-        <div style="background:rgba(255,255,255,.06);border-radius:4px;height:6px">
-          <div style="width:${Math.round((s.val/maxV)*100)}%;background:${s.color};height:6px;border-radius:4px;transition:width .6s"></div>
+        <div style="background:rgba(255,255,255,.06);border-radius:6px;height:10px">
+          <div style="width:${barW}%;background:${s.color};height:10px;border-radius:6px;transition:width .7s cubic-bezier(.34,1.56,.64,1)"></div>
         </div>
-      </div>`).join("");
+      </div>`;
+    }).join("");
   }
 
   // ── CTA Clicks ──
