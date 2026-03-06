@@ -409,7 +409,7 @@
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
           WhatsApp
         </a>
-        <a href="mailto:contact@spv-peinture.fr" id="emailLinkHero" class="btn-secondary">
+        <a href="#" id="emailLinkHero" class="btn-secondary">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
           Envoyer un mail
         </a>
@@ -1493,267 +1493,395 @@
 </script>
 
 
-<!-- ══ SPV ANALYTICS TRACKING ══════════════════════════════ -->
-<!-- Remplace les deux valeurs ci-dessous avec tes clés Supabase -->
+<!-- ══ SPV ANALYTICS v2 ══════════════════════════════════════ -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
 (function(){
+  "use strict";
+
+  /* ─── CONFIG ─────────────────────────────────────────────── */
   const SUPA_URL = "https://togigjvqmtojnwnyipej.supabase.co";
   const SUPA_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRvZ2lnanZxbXRvam53bnlpcGVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI3NDQzOTcsImV4cCI6MjA4ODMyMDM5N30.i-VfmS6PvVXxJM3oeML0AdsTSaKuU7muJPKWixbSk6w";
+  const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 min
+  const SCROLL_MILESTONES = [25, 50, 75, 100];
 
-  // ── Helpers ───────────────────────────────────────────
-  const getCookie  = n => document.cookie.split(";").map(c=>c.trim()).find(c=>c.startsWith(n+"="))?.split("=")[1];
-  const setCookie  = (n,v,d) => { const e=new Date(); e.setDate(e.getDate()+d); document.cookie=`${n}=${v};expires=${e};path=/;SameSite=Lax`; };
-  const getParam   = n => new URLSearchParams(location.search).get(n);
-  const uid        = () => Math.random().toString(36).substr(2,12)+Date.now().toString(36);
+  /* ─── HELPERS ────────────────────────────────────────────── */
+  function uuid(){ return crypto.randomUUID ? crypto.randomUUID() : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g,c=>{const r=Math.random()*16|0;return(c==="x"?r:(r&0x3|0x8)).toString(16)}); }
+  function getCookie(n){ return (document.cookie.split(";").map(c=>c.trim()).find(c=>c.startsWith(n+"="))||"").split("=")[1]||null; }
+  function setCookie(n,v,days){ const e=new Date(); e.setDate(e.getDate()+days); document.cookie=`${n}=${v};expires=${e.toUTCString()};path=/;SameSite=Lax`; }
+  function delCookie(n){ document.cookie=`${n}=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax`; }
+  function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+  function lsSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+  function lsDel(k){ try{ localStorage.removeItem(k); }catch(e){} }
+  function getParam(n){ return new URLSearchParams(location.search).get(n); }
+  function hasConsent(){ return getCookie("spv_consent")==="yes"; }
 
-  // ── Consent check ─────────────────────────────────────
-  function hasConsent(){ return getCookie("spv_consent") === "yes"; }
-
-  // ── Cookie Banner ──────────────────────────────────────
-  function showBanner(){
-    // Affiche si pas encore de choix explicite
-    if(getCookie("spv_consent") === "yes") return;
-    if(document.getElementById("spv-cookie-banner")) return;
-    var b = document.createElement("div");
-    b.id = "spv-cookie-banner";
-    b.style.cssText = "position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);z-index:9999;max-width:520px;width:calc(100% - 2rem);background:#121928;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:1rem 1.2rem;box-shadow:0 16px 60px rgba(0,0,0,.85);display:flex;flex-direction:column;gap:.8rem;animation:slideUpBanner .35s cubic-bezier(.34,1.56,.64,1)";
-    b.innerHTML = '<p style="font-family:Montserrat,sans-serif;font-size:.78rem;font-weight:700;color:#fff;margin:0 0 .25rem">🍪 Ce site utilise des cookies analytiques</p><p style="font-size:.72rem;color:rgba(255,255,255,.45);line-height:1.5;margin:0">Pour mesurer l&#39;audience et améliorer nos services. Aucune donnée personnelle vendue.</p><div style="display:flex;gap:.6rem;justify-content:flex-end"><button id="spvRefuseBtn" style="padding:.5rem 1.1rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:5px;color:rgba(255,255,255,.6);font-size:.72rem;font-weight:600;cursor:pointer;font-family:Montserrat,sans-serif">Refuser</button><button id="spvAcceptBtn" style="padding:.5rem 1.3rem;background:#1f3a8a;border:none;border-radius:5px;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;letter-spacing:.04em">Accepter</button></div>';
-    document.body.appendChild(b);
-    // Bindings directs (pas de onclick inline pour éviter les problèmes de scope)
-    document.getElementById("spvAcceptBtn").onclick = function(){ window.spvConsent(true); };
-    document.getElementById("spvRefuseBtn").onclick = function(){ window.spvConsent(false); };
-  }
-  // ── COOKIE REVOKE BUTTON ──────────────────────────────────
-  // Délégation sur document (fonctionne mobile + si DOM pas encore ready)
-  document.addEventListener("click", function(e){
-    var t = e.target.closest ? e.target.closest("#cookieRevoke") : null;
-    if(!t && e.target.id === "cookieRevoke") t = e.target;
-    if(!t) return;
-    e.preventDefault();
-    e.stopPropagation();
-    document.cookie = "spv_consent=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
-    var ex = document.getElementById("spv-cookie-banner");
-    if(ex) ex.remove();
-    setTimeout(function(){ showBanner(); }, 80);
-  });
-
-
-
-  window.spvConsent = function(yes){
-    // Supprimer d'abord l'ancien cookie dans tous les cas
-    // On supprime SEULEMENT le consentement, pas le visitor ID
-    document.cookie = "spv_consent=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
-    if(yes){
-      setCookie("spv_consent", "yes", 365);
-      initTracking();
-    } else {
-      // Refus : on pose un cookie "no" qui dure 30j pour ne pas respammer
-      setCookie("spv_consent", "no", 30);
-    }
-    var banner = document.getElementById("spv-cookie-banner");
-    if(banner) banner.remove();
-  };
-
-  // ── Tracking ───────────────────────────────────────────
-  function initTracking(){
-    const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
-
-    // Session & visitor IDs
-    let sessionId = sessionStorage.getItem("spv_sid");
-    if(!sessionId){ sessionId = uid(); sessionStorage.setItem("spv_sid", sessionId); }
-
-    // Visitor ID : cookie longue durée, SÉPARÉ du cookie consent
-    // On ne le supprime JAMAIS lors du reset cookies (seul spv_consent est supprimé)
-    // Visitor ID: cookie + localStorage comme double backup (Safari ITP supprime les cookies)
-    let visitorId = getCookie("spv_vid") || localStorage.getItem("spv_vid");
-    const isNew   = !visitorId;
-    if(isNew){
-      visitorId = uid();
+  /* ─── VISITOR ID — cookie + localStorage double backup ───── */
+  function getOrCreateVisitorId(){
+    let id = getCookie("spv_vid") || lsGet("spv_vid");
+    if(!id){
+      id = uuid();
     }
     // Toujours rafraîchir les deux storages
     const exp = new Date(); exp.setFullYear(exp.getFullYear()+2);
-    document.cookie = "spv_vid=" + visitorId + ";expires=" + exp.toUTCString() + ";path=/;SameSite=Lax";
-    try { localStorage.setItem("spv_vid", visitorId); } catch(e){}
+    document.cookie = `spv_vid=${id};expires=${exp.toUTCString()};path=/;SameSite=Lax`;
+    lsSet("spv_vid", id);
+    return id;
+  }
 
-    // UTM params
-    const utmSource   = getParam("utm_source")   || sessionStorage.getItem("utm_source");
-    const utmMedium   = getParam("utm_medium")   || sessionStorage.getItem("utm_medium");
-    const utmCampaign = getParam("utm_campaign") || sessionStorage.getItem("utm_campaign");
-    if(getParam("utm_source")) sessionStorage.setItem("utm_source",   utmSource);
-    if(getParam("utm_medium")) sessionStorage.setItem("utm_medium",   utmMedium);
-    if(getParam("utm_campaign")) sessionStorage.setItem("utm_campaign", utmCampaign);
+  /* ─── SESSION — expire après 30min d'inactivité ──────────── */
+  function getOrCreateSession(visitorId){
+    const stored = lsGet("spv_session");
+    if(stored){
+      try{
+        const s = JSON.parse(stored);
+        const age = Date.now() - s.ts;
+        if(age < SESSION_TIMEOUT){
+          // Session valide — rafraîchir le timestamp
+          s.ts = Date.now();
+          lsSet("spv_session", JSON.stringify(s));
+          return { id: s.id, isNew: false };
+        }
+      }catch(e){}
+    }
+    // Nouvelle session
+    const id = uuid();
+    lsSet("spv_session", JSON.stringify({ id, ts: Date.now() }));
+    return { id, isNew: true };
+  }
 
-    // Device detection
+  function touchSession(){
+    try{
+      const s = JSON.parse(lsGet("spv_session")||"{}");
+      if(s.id){ s.ts = Date.now(); lsSet("spv_session", JSON.stringify(s)); }
+    }catch(e){}
+  }
+
+  /* ─── UTM — capturés une seule fois par session ─────────── */
+  function captureUTM(isNewSession){
+    const keys = ["utm_source","utm_medium","utm_campaign","utm_content","utm_term","referrer"];
+    if(isNewSession){
+      // Nouvelle session → lire depuis l'URL
+      const utm = {
+        utm_source:   getParam("utm_source"),
+        utm_medium:   getParam("utm_medium"),
+        utm_campaign: getParam("utm_campaign"),
+        utm_content:  getParam("utm_content"),
+        utm_term:     getParam("utm_term"),
+        referrer:     document.referrer || null
+      };
+      lsSet("spv_utm", JSON.stringify(utm));
+      return utm;
+    } else {
+      // Session existante → lire depuis le cache
+      try{ return JSON.parse(lsGet("spv_utm")||"{}"); }catch(e){ return {}; }
+    }
+  }
+
+  /* ─── DEVICE DETECTION ───────────────────────────────────── */
+  function detectDevice(){
     const ua = navigator.userAgent;
-    const isMobile = /Mobi|Android|iPhone/i.test(ua);
-    const isTablet = /iPad|Tablet/i.test(ua);
-    const device   = isTablet ? "tablet" : isMobile ? "mobile" : "desktop";
-
-    // Browser detection
-    let browser = "Autre";
-    if(/Chrome\//.test(ua) && !/Edg\//.test(ua) && !/OPR\//.test(ua)) browser = "Chrome";
-    else if(/Safari\//.test(ua) && !/Chrome/.test(ua)) browser = "Safari";
-    else if(/Firefox\//.test(ua)) browser = "Firefox";
-    else if(/Edg\//.test(ua)) browser = "Edge";
-    else if(/OPR\//.test(ua)) browser = "Opera";
-
-    // OS detection
-    let os = "Autre";
+    const isMobile = /Android|iPhone|iPod/.test(ua);
+    const isTablet = /iPad|Android/.test(ua) && !/Mobile/.test(ua);
+    const device = isTablet ? "tablet" : isMobile ? "mobile" : "desktop";
+    let browser = "autre";
+    if(/Edg/.test(ua)) browser = "Edge";
+    else if(/OPR|Opera/.test(ua)) browser = "Opera";
+    else if(/Chrome/.test(ua)) browser = "Chrome";
+    else if(/Firefox/.test(ua)) browser = "Firefox";
+    else if(/Safari/.test(ua)) browser = "Safari";
+    let os = "autre";
     if(/Windows/.test(ua)) os = "Windows";
     else if(/Mac OS X/.test(ua) && !isMobile) os = "macOS";
     else if(/iPhone|iPad/.test(ua)) os = "iOS";
     else if(/Android/.test(ua)) os = "Android";
     else if(/Linux/.test(ua)) os = "Linux";
+    return { device, browser, os };
+  }
 
-    const hour  = new Date().getHours();
-    // Générer l'ID côté client pour éviter un SELECT après INSERT
-    let visitId = (crypto.randomUUID ? crypto.randomUUID() : uid());
-    let scrollMax = 0;
-    const startTime = Date.now();
+  /* ─── SUPABASE RAW FETCH (Prefer: return=minimal) ────────── */
+  function sbInsert(table, row){
+    return fetch(`${SUPA_URL}/rest/v1/${table}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPA_KEY,
+        "Authorization": "Bearer " + SUPA_KEY,
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(row)
+    }).catch(()=>{});
+  }
 
-    // Insert visit row
-    sb.from("page_visits").insert({
-      id:           visitId,
-      session_id:   sessionId,
-      visitor_id:   visitorId,
-      utm_source:   utmSource   || null,
-      utm_medium:   utmMedium   || null,
-      utm_campaign: utmCampaign || null,
-      utm_content:  getParam("utm_content") || sessionStorage.getItem("utm_content") || null,
-      referrer:     document.referrer || null,
-      page_url:     location.href,
-      device_type:  device,
-      browser,
-      os,
-      is_new_visitor: isNew,
-      hour_of_visit: hour,
-      scroll_depth:  0,
-      time_on_page:  0,
-      form_submitted: false
-    });
-    // visitId déjà défini avant l'INSERT — pas besoin de SELECT
+  function sbUpsert(table, row, onConflict){
+    return fetch(`${SUPA_URL}/rest/v1/${table}?on_conflict=${onConflict}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPA_KEY,
+        "Authorization": "Bearer " + SUPA_KEY,
+        "Prefer": "return=minimal,resolution=merge-duplicates"
+      },
+      body: JSON.stringify(row)
+    }).catch(()=>{});
+  }
 
-    // Scroll tracking — fonctionne sur desktop et mobile
-    let ticking = false;
-    const updateScroll = () => {
-      const el  = document.documentElement;
-      const total = el.scrollHeight - el.clientHeight;
-      const pct = total > 0 ? Math.min(100, Math.round((window.scrollY / total) * 100)) : 0;
-      if(pct > scrollMax) scrollMax = pct;
-      ticking = false;
+  function sbPatch(table, filter, row){
+    return fetch(`${SUPA_URL}/rest/v1/${table}?${filter}`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPA_KEY,
+        "Authorization": "Bearer " + SUPA_KEY,
+        "Prefer": "return=minimal"
+      },
+      body: JSON.stringify(row)
+    }).catch(()=>{});
+  }
+
+  /* ─── COOKIE CONSENT BANNER ──────────────────────────────── */
+  function showBanner(){
+    if(document.getElementById("spv-banner")) return;
+    if(getCookie("spv_consent")) return;
+    const b = document.createElement("div");
+    b.id = "spv-banner";
+    b.style.cssText = "position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);z-index:99999;max-width:520px;width:calc(100% - 2rem);background:#121928;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:1rem 1.2rem;box-shadow:0 16px 60px rgba(0,0,0,.85);display:flex;flex-direction:column;gap:.8rem;animation:slideUpBanner .35s cubic-bezier(.34,1.56,.64,1)";
+    b.innerHTML = '<p style="font-family:Montserrat,sans-serif;font-size:.78rem;font-weight:700;color:#fff;margin:0 0 .25rem">🍪 Ce site utilise des cookies analytiques</p><p style="font-size:.72rem;color:rgba(255,255,255,.45);line-height:1.5;margin:0">Pour mesurer l&#39;audience et améliorer nos services. Aucune donnée personnelle vendue.</p><div style="display:flex;gap:.6rem;justify-content:flex-end"><button id="spvRefuseBtn" style="padding:.5rem 1.1rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:5px;color:rgba(255,255,255,.6);font-size:.72rem;font-weight:600;cursor:pointer;font-family:Montserrat,sans-serif">Refuser</button><button id="spvAcceptBtn" style="padding:.5rem 1.3rem;background:#1f3a8a;border:none;border-radius:5px;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;letter-spacing:.04em">Accepter</button></div>';
+    document.body.appendChild(b);
+    document.getElementById("spvAcceptBtn").onclick = function(e){
+      setCookie("spv_consent","yes",365);
+      b.remove();
+      // Cookie burst
+      if(typeof window._spvBurst === "function") window._spvBurst(e.clientX, e.clientY);
+      initTracking();
     };
-    window.addEventListener("scroll", ()=>{
-      if(!ticking){ requestAnimationFrame(updateScroll); ticking=true; }
-    }, {passive:true});
-    // iOS Safari: touchmove aussi
-    window.addEventListener("touchmove", ()=>{
-      if(!ticking){ requestAnimationFrame(updateScroll); ticking=true; }
-    }, {passive:true});
-
-    // Periodic update (every 15s)
-    const persist = () => {
-      if(!visitId) return;
-      const secs = Math.round((Date.now() - startTime) / 1000);
-      // Utiliser fetch direct avec Prefer: return=minimal pour éviter le SELECT implicite
-      fetch("https://togigjvqmtojnwnyipej.supabase.co/rest/v1/page_visits?id=eq." + visitId, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPA_KEY,
-          "Authorization": "Bearer " + SUPA_KEY,
-          "Prefer": "return=minimal"
-        },
-        body: JSON.stringify({ scroll_depth: scrollMax, time_on_page: secs })
-      }).catch(()=>{});
-    };
-    // Persist toutes les 10s
-    setInterval(persist, 10000);
-    // Persist immédiatement après 3s (pour les visiteurs qui partent vite)
-    setTimeout(persist, 3000);
-    // Multiples événements de sortie
-    window.addEventListener("beforeunload", persist);
-    window.addEventListener("pagehide", persist);
-    document.addEventListener("visibilitychange", ()=>{
-      if(document.hidden) persist();
-    });
-
-    // Track form submission via événement custom — évite les conflits de scope
-    window._spvMarkFormSubmitted = function(){
-      if(!visitId) return;
-      fetch("https://togigjvqmtojnwnyipej.supabase.co/rest/v1/page_visits?id=eq." + visitId, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "apikey": SUPA_KEY,
-          "Authorization": "Bearer " + SUPA_KEY,
-          "Prefer": "return=minimal"
-        },
-        body: JSON.stringify({ form_submitted: true })
-      }).catch(()=>{});
+    document.getElementById("spvRefuseBtn").onclick = function(){
+      setCookie("spv_consent","no",30);
+      b.remove();
+      if(navigator.vibrate) navigator.vibrate([8,20,8]);
     };
   }
 
-  // ── Expose sur window pour accès externe ──────────────
-  window._spvShowBanner   = showBanner;
-  window._spvInitTracking = initTracking;
-  window._spvHasConsent   = hasConsent;
+  // Délégation pour "Gérer les cookies"
+  document.addEventListener("click", function(e){
+    var t = e.target.closest ? e.target.closest("#cookieRevoke") : null;
+    if(!t && e.target && e.target.id === "cookieRevoke") t = e.target;
+    if(!t) return;
+    e.preventDefault();
+    e.stopPropagation();
+    delCookie("spv_consent");
+    var ex = document.getElementById("spv-banner");
+    if(ex) ex.remove();
+    setTimeout(showBanner, 80);
+  });
 
-  // ── Boot ───────────────────────────────────────────────
+  /* ─── MAIN TRACKING ──────────────────────────────────────── */
+  function initTracking(){
+    const visitorId = getOrCreateVisitorId();
+    const { id: sessionId, isNew: isNewSession } = getOrCreateSession(visitorId);
+    const utm = captureUTM(isNewSession);
+    const { device, browser, os } = detectDevice();
+    const now = new Date().toISOString();
+    const isNewVisitor = !(getCookie("spv_vid_seen") || lsGet("spv_vid_seen"));
+
+    // Marquer visiteur comme vu
+    const seenExp = new Date(); seenExp.setFullYear(seenExp.getFullYear()+2);
+    document.cookie = `spv_vid_seen=1;expires=${seenExp.toUTCString()};path=/;SameSite=Lax`;
+    lsSet("spv_vid_seen","1");
+
+    // 1. Upsert visitor
+    sbUpsert("visitors", {
+      visitor_id:  visitorId,
+      first_seen:  now,
+      last_seen:   now,
+      is_new:      isNewVisitor
+    }, "visitor_id");
+
+    // Mettre à jour last_seen si visiteur connu
+    if(!isNewVisitor){
+      sbPatch("visitors", `visitor_id=eq.${visitorId}`, { last_seen: now });
+    }
+
+    // 2. Créer session si nouvelle
+    if(isNewSession){
+      sbInsert("sessions", {
+        session_id:   sessionId,
+        visitor_id:   visitorId,
+        started_at:   now,
+        utm_source:   utm.utm_source   || null,
+        utm_medium:   utm.utm_medium   || null,
+        utm_campaign: utm.utm_campaign || null,
+        utm_content:  utm.utm_content  || null,
+        utm_term:     utm.utm_term     || null,
+        referrer:     utm.referrer     || null,
+        device_type:  device,
+        browser,
+        os,
+        hour_of_day:  new Date().getHours()
+      });
+    }
+
+    // 3. Événement page_view
+    const pageViewId = uuid();
+    const startTime  = Date.now();
+    lsSet("spv_pv_id", pageViewId);
+
+    sbInsert("events", {
+      id:           pageViewId,
+      session_id:   sessionId,
+      event_name:   "page_view",
+      page_url:     location.href,
+      scroll_depth: 0,
+      time_on_page: 0,
+      created_at:   now,
+      metadata:     JSON.stringify({ title: document.title })
+    });
+
+    // 4. Scroll milestones
+    let scrollMax = 0;
+    const firedMilestones = new Set();
+
+    function getScrollPct(){
+      const el = document.documentElement;
+      const total = el.scrollHeight - el.clientHeight;
+      return total > 0 ? Math.min(100, Math.round((window.scrollY / total) * 100)) : 0;
+    }
+
+    let scrollTick = false;
+    function onScroll(){
+      if(!scrollTick){ requestAnimationFrame(updateScroll); scrollTick = true; }
+    }
+    function updateScroll(){
+      scrollTick = false;
+      const pct = getScrollPct();
+      if(pct > scrollMax) scrollMax = pct;
+      SCROLL_MILESTONES.forEach(m => {
+        if(pct >= m && !firedMilestones.has(m)){
+          firedMilestones.add(m);
+          sbInsert("events", {
+            id:           uuid(),
+            session_id:   sessionId,
+            event_name:   "scroll",
+            page_url:     location.href,
+            scroll_depth: m,
+            time_on_page: Math.round((Date.now()-startTime)/1000),
+            created_at:   new Date().toISOString(),
+            metadata:     JSON.stringify({ milestone: m })
+          });
+        }
+      });
+    }
+    window.addEventListener("scroll",    onScroll, { passive:true });
+    window.addEventListener("touchmove", onScroll, { passive:true });
+
+    // 5. Persist page_view avec scroll + temps final
+    function persistPageView(){
+      const secs = Math.round((Date.now() - startTime) / 1000);
+      sbPatch("events", `id=eq.${pageViewId}`, {
+        scroll_depth: scrollMax,
+        time_on_page: secs
+      });
+      touchSession();
+    }
+    setInterval(persistPageView, 10000);
+    setTimeout(persistPageView, 3000);
+    window.addEventListener("beforeunload", persistPageView);
+    window.addEventListener("pagehide",     persistPageView);
+    document.addEventListener("visibilitychange", ()=>{ if(document.hidden) persistPageView(); });
+
+    // 6. Form submit tracking
+    window._spvMarkFormSubmitted = function(){
+      const t = new Date().toISOString();
+      sbInsert("events", {
+        id:           uuid(),
+        session_id:   sessionId,
+        event_name:   "form_submit",
+        page_url:     location.href,
+        scroll_depth: scrollMax,
+        time_on_page: Math.round((Date.now()-startTime)/1000),
+        created_at:   t,
+        metadata:     JSON.stringify({ form: "contact" })
+      });
+      // Marquer la session comme convertie
+      sbPatch("sessions", `session_id=eq.${sessionId}`, { converted: true, converted_at: t });
+    };
+
+    // 7. CTA click tracking
+    document.addEventListener("click", function(e){
+      const el = e.target.closest("a[href^='tel:'], a[href^='https://wa.me'], .btn-primary, .btn-whatsapp");
+      if(!el) return;
+      let ctaType = "other";
+      const href = el.getAttribute("href")||"";
+      if(href.startsWith("tel:")) ctaType = "phone";
+      else if(href.includes("wa.me")) ctaType = "whatsapp";
+      sbInsert("events", {
+        id:         uuid(),
+        session_id: sessionId,
+        event_name: "cta_click",
+        page_url:   location.href,
+        created_at: new Date().toISOString(),
+        metadata:   JSON.stringify({ type: ctaType, text: el.textContent.trim().slice(0,50) })
+      });
+    }, { passive:true });
+
+    // 8. Activity → refresh session timeout
+    ["click","scroll","keydown","touchstart"].forEach(ev=>{
+      window.addEventListener(ev, touchSession, { passive:true });
+    });
+  }
+
+  /* ─── DEV BADGE ──────────────────────────────────────────── */
   const isLocal = ["localhost","127.0.0.1","0.0.0.0"].includes(location.hostname)
     || location.hostname.startsWith("192.168.")
     || location.hostname.startsWith("10.")
     || location.protocol === "file:";
   const isAdmin = document.cookie.includes("sb-") || sessionStorage.getItem("spv_is_admin");
 
-  function bootTracking(){
-    if(document.readyState === "loading"){
-      document.addEventListener("DOMContentLoaded", ()=>{ showBanner(); if(hasConsent()) initTracking(); });
+  function mountDevBadge(){
+    document.getElementById("spvDevBadge")?.remove();
+    const active = sessionStorage.getItem("spv_dev_track") === "1";
+    const dev = document.createElement("div");
+    dev.id = "spvDevBadge";
+    if(active){
+      dev.style.cssText = "position:fixed;bottom:.5rem;left:.5rem;z-index:9999;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.35);color:#22c55e;font-size:.62rem;font-family:monospace;padding:.3rem .75rem;border-radius:5px;pointer-events:none";
+      dev.innerHTML = "✓ Tracking <b>actif</b> (dev)";
+    } else {
+      dev.style.cssText = "position:fixed;bottom:.5rem;left:.5rem;z-index:9999;background:rgba(201,163,39,.13);border:1px solid rgba(201,163,39,.3);color:#c9a327;font-size:.62rem;font-family:monospace;padding:.3rem .75rem;border-radius:5px;cursor:pointer;user-select:none;transition:background .2s";
+      dev.innerHTML = "⚙ Tracking <b>désactivé</b> — cliquer pour tester";
+      dev.addEventListener("mouseenter", ()=> dev.style.background = "rgba(201,163,39,.25)");
+      dev.addEventListener("mouseleave", ()=> dev.style.background = "rgba(201,163,39,.13)");
+      dev.addEventListener("click", ()=>{
+        sessionStorage.setItem("spv_dev_track","1");
+        setCookie("spv_consent","yes",1);
+        mountDevBadge();
+        initTracking();
+      });
+    }
+    document.body.appendChild(dev);
+    if(active){ setCookie("spv_consent","yes",1); }
+  }
+
+  /* ─── BOOT ───────────────────────────────────────────────── */
+  function boot(){
+    if(isLocal || isAdmin){
+      mountDevBadge();
+      if(sessionStorage.getItem("spv_dev_track")==="1") initTracking();
     } else {
       showBanner();
       if(hasConsent()) initTracking();
     }
   }
 
-  if(isLocal || isAdmin){
-    // Badge cliquable — toujours visible en local
-    function mountDevBadge(){
-      // Supprimer un éventuel ancien badge
-      document.getElementById("spvDevBadge")?.remove();
-      const active = sessionStorage.getItem("spv_dev_track") === "1";
-      const dev = document.createElement("div");
-      dev.id = "spvDevBadge";
-      if(active){
-        dev.style.cssText = "position:fixed;bottom:.5rem;left:.5rem;z-index:9999;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.35);color:#22c55e;font-size:.62rem;font-family:monospace;padding:.3rem .75rem;border-radius:5px;pointer-events:none";
-        dev.innerHTML = "✓ Tracking <b>actif</b> (dev)";
-      } else {
-        dev.style.cssText = "position:fixed;bottom:.5rem;left:.5rem;z-index:9999;background:rgba(201,163,39,.13);border:1px solid rgba(201,163,39,.3);color:#c9a327;font-size:.62rem;font-family:monospace;padding:.3rem .75rem;border-radius:5px;cursor:pointer;user-select:none;transition:background .2s";
-        dev.innerHTML = "⚙ Tracking <b>désactivé</b> — cliquer pour tester";
-        dev.addEventListener("mouseenter", ()=> dev.style.background = "rgba(201,163,39,.25)");
-        dev.addEventListener("mouseleave", ()=> dev.style.background = "rgba(201,163,39,.13)");
-        dev.addEventListener("click", ()=>{
-          sessionStorage.setItem("spv_dev_track","1");
-          setCookie("spv_consent","yes",1);
-          mountDevBadge();
-          // initTracking directement — pas de bannière en mode dev
-          try { initTracking(); } catch(e){ console.error("SPV tracking error:", e); }
-        });
-      }
-      document.body.appendChild(dev);
-      // Si déjà actif au chargement, lancer le tracking
-      if(active){
-        setCookie("spv_consent","yes",1);
-        bootTracking();
-      }
-    }
-    if(document.readyState === "loading"){
-      document.addEventListener("DOMContentLoaded", mountDevBadge);
-    } else {
-      mountDevBadge();
-    }
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", boot);
   } else {
-    bootTracking();
+    boot();
   }
+
+  // Expose pour les hooks externes
+  window._spvInitTracking = initTracking;
+  window._spvShowBanner   = showBanner;
+
 })();
 </script>
 
