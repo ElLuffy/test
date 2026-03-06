@@ -181,8 +181,9 @@
 
     .zone-right{display:flex;flex-direction:column;gap:2rem}
     .cities-grid{display:flex;flex-wrap:wrap;gap:.5rem}
-    .city-tag{padding:.4rem .9rem;border:1px solid var(--border-strong);border-radius:999px;font-size:.78rem;font-weight:500;color:var(--text-secondary);transition:all var(--transition);cursor:default}
+    .city-tag{padding:.4rem .9rem;border:1px solid var(--border-strong);border-radius:999px;font-size:.78rem;font-weight:500;color:var(--text-secondary);transition:all var(--transition);cursor:pointer;user-select:none;}
     .city-tag:hover{border-color:var(--blue);color:var(--blue);background:rgba(31,58,138,.06)}
+    .city-tag.active{border-color:var(--blue);color:#fff;background:var(--blue);}
     .zone-note{display:flex;align-items:center;gap:.8rem;padding:1rem 1.2rem;background:rgba(31,58,138,.07);border:1px solid rgba(31,58,138,.2);border-radius:6px}
     .zone-note svg{width:18px;height:18px;stroke:var(--blue);fill:none;flex-shrink:0}
     .zone-note p{font-size:.82rem;color:var(--text-secondary)}
@@ -612,7 +613,7 @@
         </div>
 
         <div class="cities-grid reveal">
-          <span class="city-tag">La Roche-sur-Yon</span><span class="city-tag">Les Sables-d'Olonne</span><span class="city-tag">Challans</span><span class="city-tag">Fontenay-le-Comte</span><span class="city-tag">Luçon</span><span class="city-tag">Saint-Jean-de-Monts</span><span class="city-tag">La Châtaigneraie</span><span class="city-tag">Montaigu-Vendée</span><span class="city-tag">Saint-Gilles-Croix-de-Vie</span><span class="city-tag">Noirmoutier</span><span class="city-tag">L'Île-d'Yeu</span><span class="city-tag">Chantonnay</span><span class="city-tag">Les Herbiers</span><span class="city-tag">La Tranche-sur-Mer</span>
+          <span class="city-tag" data-city="La Roche-sur-Yon">La Roche-sur-Yon</span><span class="city-tag" data-city="Les Sables-d'Olonne">Les Sables-d'Olonne</span><span class="city-tag" data-city="Challans">Challans</span><span class="city-tag" data-city="Fontenay-le-Comte">Fontenay-le-Comte</span><span class="city-tag" data-city="Luçon">Luçon</span><span class="city-tag" data-city="Saint-Jean-de-Monts">Saint-Jean-de-Monts</span><span class="city-tag" data-city="La Châtaigneraie">La Châtaigneraie</span><span class="city-tag" data-city="Montaigu-Vendée">Montaigu-Vendée</span><span class="city-tag" data-city="Saint-Gilles-Croix-de-Vie">Saint-Gilles-Croix-de-Vie</span><span class="city-tag" data-city="Noirmoutier">Noirmoutier</span><span class="city-tag" data-city="L'Île-d'Yeu">L'Île-d'Yeu</span><span class="city-tag" data-city="Chantonnay">Chantonnay</span><span class="city-tag" data-city="Les Herbiers">Les Herbiers</span><span class="city-tag" data-city="La Tranche-sur-Mer">La Tranche-sur-Mer</span>
         </div>
 
         <div class="zone-note reveal">
@@ -739,35 +740,6 @@
 
 <!-- GLOBAL SITE SCRIPT (theme, nav, reveal, contact form, etc.) -->
 <script>
-  /* ─── VIBRATIONS HAPTIQUES ──────────────────────────────────────────────────
-     Patterns logiques :
-       tap      : [25]              → micro-tick, navigation / bouton secondaire
-       cta      : [40]              → tick net, appel/whatsapp/email déclenché
-       select   : [20]              → sélection service (léger)
-       menu     : [30]              → ouverture menu mobile
-       anchor   : [18]              → scroll ancre
-       errorField: [80,50,80]       → champ manquant — double tape "non"
-       errorFormat:[40,25,40,25,40] → format invalide — buzz saccadé "attention"
-       errorSend:  [60,40,120]      → erreur réseau — lourd puis long
-       success  : [40,60,200]       → envoi réussi — montée puis long buzz satisfaisant
-  ─────────────────────────────────────────────────────────────────────────── */
-  const VIBE = {
-    tap:         [25],
-    cta:         [40],
-    select:      [20],
-    menu:        [30],
-    anchor:      [18],
-    errorField:  [80, 50, 80],
-    errorFormat: [40, 25, 40, 25, 40],
-    errorSend:   [60, 40, 120],
-    success:     [40, 60, 200],
-  };
-  function vibe(type){
-    if(!navigator.vibrate) return;
-    const pat = VIBE[type];
-    if(pat) navigator.vibrate(pat);
-  }
-
   // NAV scrolled
   const nav = document.getElementById('main-nav');
   const onScroll = () => {
@@ -779,7 +751,7 @@
   // Mobile menu
   const hamburger = document.getElementById('hamburger');
   const mobileMenu = document.getElementById('mobileMenu');
-  hamburger.addEventListener('click', () => { vibe('menu'); mobileMenu.classList.toggle('open'); });
+  hamburger.addEventListener('click', () => { mobileMenu.classList.toggle('open'); });
   window.closeMobile = () => mobileMenu.classList.remove('open');
 
   // Theme toggle
@@ -794,7 +766,7 @@
     toggleIcon.setAttribute('d', t === 'dark' ? moonPath : sunPath);
   };
   setTheme(localStorage.getItem('spv_theme') || 'dark');
-  tt.addEventListener('click', () => { vibe('tap'); setTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); });
+  tt.addEventListener('click', () => { setTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); });
 
 
 
@@ -828,7 +800,6 @@
       const target = document.getElementById(id);
       if(!target) return;
       e.preventDefault();
-      vibe('anchor');
       const offset = target.getBoundingClientRect().top + window.scrollY - 72;
       smoothScrollTo(offset, 750);
       // Close mobile menu if open
@@ -865,8 +836,6 @@
         document.body.appendChild(el);
         setTimeout(()=>el.remove(), 1100);
       }
-      // Vibration (mobile)
-      if(navigator.vibrate) navigator.vibrate([12, 40, 8]);
     }
 
     // Haptic click ripple (Apple-style)
@@ -877,7 +846,6 @@
       el.style.top  = y+"px";
       document.body.appendChild(el);
       setTimeout(()=>el.remove(), 400);
-      if(navigator.vibrate) navigator.vibrate(6);
     }
 
     // Attach cookie burst to consent buttons
@@ -896,7 +864,6 @@
         if(refuseBtn && !refuseBtn._patched){
           refuseBtn._patched = true;
           refuseBtn.addEventListener("click", e => {
-            if(navigator.vibrate) navigator.vibrate([8,20,8]);
           });
         }
       });
@@ -945,7 +912,6 @@
 
   // Services -> select in form + scroll
   window.selectService = (name) => {
-    vibe('select');
     const sel = document.getElementById('f-service');
     if (sel) sel.value = name;
     const ct = document.getElementById('contact'); if(ct){ const off = ct.getBoundingClientRect().top + window.scrollY - 72; smoothScrollTo(off, 750); }
@@ -986,23 +952,10 @@
     };
 
     let anyError = false;
-    let hasEmpty = false;
-    let hasFormat = false;
     for(const [id, hasErr] of Object.entries(errors)){
       setGrpError(id, hasErr);
-      if(hasErr){
-        anyError = true;
-        // Champ tél rempli mais mal formaté = erreur de format
-        if(id === "grp-tel" && tel && !telOk) hasFormat = true;
-        else hasEmpty = true;
-      }
+      if(hasErr) anyError = true;
     }
-    // Vibration selon type d'erreur
-    if(anyError){
-      if(hasFormat && !hasEmpty) vibe('errorFormat'); // seulement format invalide
-      else vibe('errorField');                         // champs vides
-    }
-
     // clear errors on input
     ["f-prenom","f-nom","f-tel","f-service","f-message"].forEach(fid => {
       document.getElementById(fid).addEventListener("input", () => {
@@ -1115,7 +1068,6 @@
     });
 
     window._slideSuccess = function(){
-      vibe('success');
       fill.classList.add("success"); handle.classList.add("success");
       handle.innerHTML = checkSVG();
       showStatus("success-msg","\u2713 Message envoy\u00e9 !");
@@ -1128,7 +1080,6 @@
     };
 
     window._slideError = function(msg){
-      vibe('errorSend');
       fill.classList.add("error-fill"); handle.classList.add("error-h");
       handle.innerHTML = crossSVG();
       showStatus("error-msg","\u2717 " + (msg || "Erreur \u2014 r\u00e9essayez"));
@@ -1404,14 +1355,18 @@
     mouse.x = ((t.clientX - rect.left) / rect.width)  *  2 - 1;
     mouse.y = ((t.clientY - rect.top)  / rect.height) * -2 + 1;
   }, { passive: false });
-  renderer.domElement.addEventListener("touchend", () => {
-    // Click on city — show tooltip briefly
+  renderer.domElement.addEventListener("touchend", ev => {
+    // Mettre à jour mouse depuis le dernier touch
+    const t = ev.changedTouches[0];
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((t.clientX - rect.left) / rect.width)  *  2 - 1;
+    mouse.y = ((t.clientY - rect.top)  / rect.height) * -2 + 1;
+    raycaster.setFromCamera(mouse, camera);
     const dots = cityMeshes.map(o => o.dot);
     const hits = raycaster.intersectObjects(dots, false);
     if(hits.length){
       const obj = cityMeshes.find(o => o.dot === hits[0].object);
-      setHovered(obj);
-      setTimeout(() => { mouse.set(999,999); setHovered(null); }, 2500);
+      highlightCity(obj, true);
     } else {
       mouse.set(999, 999);
       setHovered(null);
@@ -1427,9 +1382,49 @@
     const hits = raycaster.intersectObjects(dots, false);
     if(hits.length){
       const obj = cityMeshes.find(o => o.dot === hits[0].object);
-      setHovered(obj);
+      highlightCity(obj, false);
     }
   });
+
+  // ── City tag click → highlight on map ──────────────────────
+  let tagTimer = null;
+  document.querySelectorAll(".city-tag[data-city]").forEach(tag => {
+    tag.addEventListener("click", () => {
+      const name = tag.dataset.city;
+      const obj  = cityMeshes.find(o => o.city.name === name);
+      if(!obj) return;
+
+      // Sur mobile : scroll vers la carte d'abord
+      const isMobile = window.innerWidth <= 768;
+      if(isMobile){
+        const mapCard = document.getElementById("zoneMapCard");
+        if(mapCard){
+          const top = mapCard.getBoundingClientRect().top + window.scrollY - 80;
+          smoothScrollTo(top, 600);
+        }
+      }
+
+      // Highlight city (avec délai sur mobile pour laisser le scroll se faire)
+      setTimeout(() => highlightCity(obj, true), isMobile ? 500 : 0);
+
+      // Active state sur le tag
+      document.querySelectorAll(".city-tag").forEach(t => t.classList.remove("active"));
+      tag.classList.add("active");
+    });
+  });
+
+  // highlightCity : affiche tooltip et l'enlève après 2.5s
+  function highlightCity(obj, autoHide){
+    setHovered(obj);
+    if(tagTimer) clearTimeout(tagTimer);
+    if(autoHide){
+      tagTimer = setTimeout(() => {
+        mouse.set(999, 999);
+        setHovered(null);
+        document.querySelectorAll(".city-tag").forEach(t => t.classList.remove("active"));
+      }, 2500);
+    }
+  }
 
   function setHovered(obj){
     if(hovered === obj) return;
@@ -1680,7 +1675,6 @@
     document.getElementById("spvRefuseBtn").onclick = function(){
       setCookie("spv_consent","no",30);
       b.remove();
-      if(navigator.vibrate) navigator.vibrate([8,20,8]);
     };
   }
 
@@ -1857,7 +1851,6 @@
       else if(href.includes("wa.me") || el.classList.contains("fab-whatsapp") || el.classList.contains("btn-whatsapp")) ctaType = "whatsapp";
       else if(href.startsWith("mailto:") || el.id?.includes("email") || el.id?.includes("Email")) ctaType = "email";
       if(ctaType === "other") return; // ignorer les autres clics
-      vibe('cta'); // vibration haptique CTA
       sbInsert("events", {
         id:         uuid(),
         session_id: sessionId,
