@@ -1098,6 +1098,8 @@
       ["f-prenom","f-nom","f-tel","f-service","f-message"].forEach(function(id){
         var el=document.getElementById(id); if(el) el.value="";
       });
+      // Notifier le tracking analytics
+      if(typeof window._spvMarkFormSubmitted === "function") window._spvMarkFormSubmitted();
       reset(4000);
     };
 
@@ -1492,9 +1494,8 @@
     if(rBtn){
       rBtn.addEventListener("click", function(e){
         e.preventDefault();
-        ["spv_consent","spv_vid"].forEach(function(n){
-          document.cookie = n + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
-        });
+        // On supprime SEULEMENT le consentement, pas le visitor ID
+        document.cookie = "spv_consent=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
         var ex = document.getElementById("spv-cookie-banner");
         if(ex) ex.remove();
         // Forcer réaffichage même si cookie "no" existait
@@ -1507,9 +1508,8 @@
 
   window.spvConsent = function(yes){
     // Supprimer d'abord l'ancien cookie dans tous les cas
-    ["spv_consent","spv_vid"].forEach(function(n){
-      document.cookie = n + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
-    });
+    // On supprime SEULEMENT le consentement, pas le visitor ID
+    document.cookie = "spv_consent=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
     if(yes){
       setCookie("spv_consent", "yes", 365);
       initTracking();
@@ -1529,9 +1529,16 @@
     let sessionId = sessionStorage.getItem("spv_sid");
     if(!sessionId){ sessionId = uid(); sessionStorage.setItem("spv_sid", sessionId); }
 
+    // Visitor ID : cookie longue durée, SÉPARÉ du cookie consent
+    // On ne le supprime JAMAIS lors du reset cookies (seul spv_consent est supprimé)
     let visitorId = getCookie("spv_vid");
     const isNew   = !visitorId;
-    if(isNew){ visitorId = uid(); setCookie("spv_vid", visitorId, 365); }
+    if(isNew){
+      visitorId = uid();
+      // Durée 2 ans, résiste aux clics "Gérer les cookies"
+      const exp = new Date(); exp.setFullYear(exp.getFullYear()+2);
+      document.cookie = "spv_vid=" + visitorId + ";expires=" + exp.toUTCString() + ";path=/;SameSite=Lax";
+    }
 
     // UTM params
     const utmSource   = getParam("utm_source")   || sessionStorage.getItem("utm_source");
@@ -1606,26 +1613,41 @@
     const persist = () => {
       if(!visitId) return;
       const secs = Math.round((Date.now() - startTime) / 1000);
-      sb.from("page_visits").update({
-        scroll_depth: scrollMax,
-        time_on_page: secs
-      }).eq("id", visitId);
+      // Utiliser fetch direct avec Prefer: return=minimal pour éviter le SELECT implicite
+      fetch("https://togigjvqmtojnwnyipej.supabase.co/rest/v1/page_visits?id=eq." + visitId, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPA_KEY,
+          "Authorization": "Bearer " + SUPA_KEY,
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({ scroll_depth: scrollMax, time_on_page: secs })
+      }).catch(()=>{});
     };
-    setInterval(persist, 15000);
+    // Persist toutes les 5s (plus réactif)
+    setInterval(persist, 5000);
 
-    // Before unload
+    // Multiples événements de sortie pour couvrir tous les cas
     window.addEventListener("beforeunload", persist);
+    window.addEventListener("pagehide", persist);
+    document.addEventListener("visibilitychange", ()=>{
+      if(document.hidden) persist();
+    });
 
-    // Track form submission
-    const origSend = window.sendForm;
-    window.sendForm = async function(){
-      await origSend();
-      // Mark form submitted after a short delay (give sendForm time to run)
-      setTimeout(()=>{
-        if(visitId){
-          sb.from("page_visits").update({ form_submitted: true }).eq("id", visitId);
-        }
-      }, 2000);
+    // Track form submission via événement custom — évite les conflits de scope
+    window._spvMarkFormSubmitted = function(){
+      if(!visitId) return;
+      fetch("https://togigjvqmtojnwnyipej.supabase.co/rest/v1/page_visits?id=eq." + visitId, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "apikey": SUPA_KEY,
+          "Authorization": "Bearer " + SUPA_KEY,
+          "Prefer": "return=minimal"
+        },
+        body: JSON.stringify({ form_submitted: true })
+      }).catch(()=>{});
     };
   }
 
