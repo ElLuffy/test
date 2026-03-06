@@ -152,7 +152,7 @@
       border:1px solid var(--border);border-radius:12px;overflow:hidden;
       display:flex;align-items:center;justify-content:center;
     }
-    .zone-map-visual canvas{width:100%;height:100%;display:block}
+    .zone-map-visual canvas{width:100%;height:100%;display:block;touch-action:pan-y;}
     .zone-dept-number{
       position:absolute;top:1rem;right:1.2rem;z-index:3;
       font-family:var(--font-title);font-weight:900;font-size:2.8rem;
@@ -1362,6 +1362,8 @@
   // Touch support — hover on touch
   // Touch smart : tap sur point = tooltip, sinon scroll normal
   let touchStartX = 0, touchStartY = 0, touchMoved = false;
+  // Permettre le scroll vertical natif sur le canvas
+  renderer.domElement.style.touchAction = "pan-y";
   renderer.domElement.addEventListener("touchstart", ev => {
     touchStartX = ev.touches[0].clientX;
     touchStartY = ev.touches[0].clientY;
@@ -1370,10 +1372,10 @@
   renderer.domElement.addEventListener("touchmove", ev => {
     const dx = Math.abs(ev.touches[0].clientX - touchStartX);
     const dy = Math.abs(ev.touches[0].clientY - touchStartY);
-    if(dx > 6 || dy > 6) touchMoved = true; // c'est un scroll, on laisse passer
+    if(dx > 6 || dy > 6) touchMoved = true;
   }, { passive: true });
   renderer.domElement.addEventListener("touchend", ev => {
-    if(touchMoved) return; // scroll → on ne fait rien
+    if(touchMoved) return;
     const t = ev.changedTouches[0];
     const rect = renderer.domElement.getBoundingClientRect();
     mouse.x = ((t.clientX - rect.left) / rect.width)  *  2 - 1;
@@ -1413,20 +1415,22 @@
       const obj  = cityMeshes.find(o => o.city.name === name);
       if(!obj) return;
 
-      // Scroll vers la carte sur TOUS les écrans
-      const mapCard = document.getElementById("zoneMapCard");
-      if(mapCard){
-        const top = mapCard.getBoundingClientRect().top + window.scrollY - 80;
-        smoothScrollTo(top, 600);
+      // Scroll vers la carte uniquement sur mobile
+      const isMobile = window.innerWidth <= 768;
+      if(isMobile){
+        const mapCard = document.getElementById("zoneMapCard");
+        if(mapCard){
+          const top = mapCard.getBoundingClientRect().top + window.scrollY - 80;
+          smoothScrollTo(top, 600);
+        }
       }
 
       // Active state sur le tag
       document.querySelectorAll(".city-tag").forEach(t => t.classList.remove("active"));
       tag.classList.add("active");
 
-      // Pin la ville après le scroll (délai mobile plus long)
-      const isMobile = window.innerWidth <= 768;
-      setTimeout(() => pinCity(obj), isMobile ? 550 : 350);
+      // Pin la ville (délai sur mobile pour laisser le scroll se faire)
+      setTimeout(() => pinCity(obj), isMobile ? 550 : 0);
     });
   });
 
