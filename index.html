@@ -1676,7 +1676,10 @@
   });
 
   /* ─── MAIN TRACKING ──────────────────────────────────────── */
+  let _trackingStarted = false;
   function initTracking(){
+    if(_trackingStarted) return; // Empêcher double appel
+    _trackingStarted = true;
     const visitorId = getOrCreateVisitorId();
     const { id: sessionId, isNew: isNewSession } = getOrCreateSession(visitorId);
     const utm = captureUTM(isNewSession);
@@ -1689,16 +1692,17 @@
     document.cookie = `spv_vid_seen=1;expires=${seenExp.toUTCString()};path=/;SameSite=Lax`;
     lsSet("spv_vid_seen","1");
 
-    // 1. Upsert visitor
-    sbUpsert("visitors", {
-      visitor_id:  visitorId,
-      first_seen:  now,
-      last_seen:   now,
-      is_new:      isNewVisitor
-    }, "visitor_id");
-
-    // Mettre à jour last_seen si visiteur connu
-    if(!isNewVisitor){
+    // 1. Visitor — INSERT si nouveau (ignore si déjà existant), PATCH last_seen
+    if(isNewVisitor){
+      // Nouvel visiteur : INSERT simple
+      sbInsert("visitors", {
+        visitor_id: visitorId,
+        first_seen: now,
+        last_seen:  now,
+        is_new:     true
+      });
+    } else {
+      // Visiteur connu : juste mettre à jour last_seen
       sbPatch("visitors", `visitor_id=eq.${visitorId}`, { last_seen: now });
     }
 
