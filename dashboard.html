@@ -911,8 +911,14 @@ function renderScroll(E, S){
     }).join("");
   }
 
-  // ── Temps sur page — même style barres horizontales ──
-  const pvTimes = E.filter(e=>e.event_name==="page_view" && e.time_on_page>0).map(e=>e.time_on_page);
+  // ── Temps total par SESSION (somme des page_view) ──
+  // Grouper les page_view par session_id et sommer le time_on_page
+  const sessionTimes = {};
+  E.filter(e=>e.event_name==="page_view").forEach(e=>{
+    if(!e.session_id) return;
+    sessionTimes[e.session_id] = (sessionTimes[e.session_id]||0) + (e.time_on_page||0);
+  });
+  const pvTimes = Object.values(sessionTimes).filter(t=>t>0);
   const timeDef = [
     { label:"< 30s",  fn:t=>t<30,              color:"rgba(255,255,255,.18)" },
     { label:"30s–1m", fn:t=>t>=30&&t<60,       color:"#6b9ef8" },
