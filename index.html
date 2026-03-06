@@ -1713,20 +1713,29 @@
     }
 
     // 3. Événement page_view
-    const pageViewId = uuid();
-    const startTime  = Date.now();
-    lsSet("spv_pv_id", pageViewId);
+    // Si rechargement rapide (<3s) sur la même session → réutiliser le même page_view
+    const storedPV  = JSON.parse(lsGet("spv_pv")||"{}");
+    const pvAge     = Date.now() - (storedPV.ts||0);
+    const sameSession = storedPV.sid === sessionId;
+    const isQuickReload = pvAge < 3000 && sameSession && storedPV.id;
 
-    sbInsert("events", {
-      id:           pageViewId,
-      session_id:   sessionId,
-      event_name:   "page_view",
-      page_url:     location.href,
-      scroll_depth: 0,
-      time_on_page: 0,
-      created_at:   now,
-      metadata:     { title: document.title }
-    });
+    const pageViewId = isQuickReload ? storedPV.id : uuid();
+    const startTime  = isQuickReload ? (Date.now() - pvAge) : Date.now();
+
+    lsSet("spv_pv", JSON.stringify({ id: pageViewId, sid: sessionId, ts: Date.now() }));
+
+    if(!isQuickReload){
+      sbInsert("events", {
+        id:           pageViewId,
+        session_id:   sessionId,
+        event_name:   "page_view",
+        page_url:     location.href,
+        scroll_depth: 0,
+        time_on_page: 0,
+        created_at:   now,
+        metadata:     { title: document.title }
+      });
+    }
 
     // 4. Scroll milestones
     let scrollMax = 0;
