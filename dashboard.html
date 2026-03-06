@@ -3,1103 +3,1718 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>SPV — Tour de Contrôle</title>
+  <title>SPV – Société de Peinture Vendéenne | Peinture & Rénovation en Vendée</title>
+  <meta name="description" content="SPV – Société de Peinture Vendéenne. Peinture intérieure, extérieure, ravalement de façade, revêtements muraux, pose de sols. Intervention dans toute la Vendée (85). Devis gratuit."/>
+
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700;800;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+
   <style>
-    :root{
-      --blue:#1f3a8a;--blue-l:#2a4db5;--blue-glow:rgba(31,58,138,.25);
-      --green:#16a34a;--red:#dc2626;--gold:#c9a327;--orange:#ea580c;
-      --font-title:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;--font-mono:'JetBrains Mono',monospace;
-      --tr:.25s cubic-bezier(.4,0,.2,1);
-    }
-    [data-theme="dark"]{
-      --bg:#080c14;--bg2:#0d1220;--bg3:#111827;--card:#121928;--card-h:#161f31;
-      --border:rgba(255,255,255,.06);--border-s:rgba(255,255,255,.12);
-      --txt:#f1f5f9;--txt2:rgba(241,245,249,.55);--txt3:rgba(241,245,249,.3);
-      --shadow:0 0 0 1px rgba(255,255,255,.04),0 8px 32px rgba(0,0,0,.7);
-    }
+    :root{--blue:#1f3a8a;--blue-light:#2a4db5;--font-title:'Montserrat',sans-serif;--font-body:'Inter',sans-serif;--transition:.3s cubic-bezier(.4,0,.2,1)}
+    [data-theme="dark"]{--bg:#0e0e0e;--bg-2:#141414;--bg-card:#181818;--bg-card-hover:#1e1e1e;--border:rgba(255,255,255,.07);--border-strong:rgba(255,255,255,.14);--text-primary:#fff;--text-secondary:rgba(255,255,255,.55);--text-muted:rgba(255,255,255,.3);--shadow:0 0 0 1px rgba(255,255,255,.05),0 8px 32px rgba(0,0,0,.6);--shadow-blue:0 8px 40px rgba(31,58,138,.35)}
+    [data-theme="light"]{--bg:#f4f4f5;--bg-2:#fff;--bg-card:#fff;--bg-card-hover:#f8f8f8;--border:rgba(0,0,0,.07);--border-strong:rgba(0,0,0,.14);--text-primary:#0e0e0e;--text-secondary:rgba(14,14,14,.55);--text-muted:rgba(14,14,14,.35);--shadow:0 0 0 1px rgba(0,0,0,.05),0 8px 32px rgba(0,0,0,.08);--shadow-blue:0 8px 40px rgba(31,58,138,.2)}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    html,body{height:100%;overflow:hidden}
-    body{font-family:var(--font-body);background:var(--bg);color:var(--txt);display:flex;overflow:hidden}
+    html{scroll-behavior:auto}
+    body{font-family:var(--font-body);background:var(--bg);color:var(--text-primary);line-height:1.6;transition:background .4s,color .4s;overflow-x:hidden}
+    a{text-decoration:none;color:inherit}
+    img{max-width:100%;display:block}
+    button{font-family:inherit;cursor:pointer;border:none}
+    .t-label{font-family:var(--font-title);font-size:.65rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--blue)}
+    .t-h2{font-family:var(--font-title);font-weight:800;font-size:clamp(2rem,4vw,3rem);line-height:1.05;letter-spacing:-.025em}
+    .t-h3{font-family:var(--font-title);font-weight:700;font-size:1.05rem;letter-spacing:-.01em}
+    .t-body{font-size:.9rem;line-height:1.7;color:var(--text-secondary)}
+    .container{max-width:1200px;margin:0 auto;padding:0 2rem}
+    section{padding:6rem 0}
 
-    /* ── SIDEBAR ── */
-    .sidebar{width:220px;min-width:220px;background:var(--bg2);border-right:1px solid var(--border);display:flex;flex-direction:column;z-index:10;transition:width var(--tr)}
-    .sb-logo{padding:1.4rem 1.2rem;display:flex;align-items:center;gap:.7rem;border-bottom:1px solid var(--border)}
-    .sb-logo-icon{width:40px;height:40px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}
-    .sb-logo-icon svg{width:36px;height:36px;fill:#fff;display:block}
-    .sb-logo-text{font-family:var(--font-title);font-weight:800;font-size:.9rem;letter-spacing:.03em}
-    .sb-logo-sub{font-family:var(--font-title);font-size:.45rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--txt3)}
-    .sb-nav{flex:1;padding:.8rem 0;overflow-y:auto}
-    .sb-section{padding:.4rem 1rem .2rem;font-family:var(--font-title);font-size:.55rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--txt3);margin-top:.4rem}
-    .sb-item{display:flex;align-items:center;gap:.7rem;padding:.55rem 1rem;margin:.1rem .5rem;border-radius:6px;cursor:pointer;transition:all var(--tr);font-size:.8rem;font-weight:500;color:var(--txt2)}
-    .sb-item svg{width:15px;height:15px;stroke:currentColor;fill:none;flex-shrink:0;stroke-width:1.8}
-    .sb-item:hover{background:rgba(255,255,255,.04);color:var(--txt)}
-    .sb-item.active{background:rgba(31,58,138,.2);color:#fff;border:1px solid rgba(31,58,138,.3)}
-    .sb-item.active svg{stroke:#fff}
-    .sb-bottom{padding:1rem;border-top:1px solid var(--border)}
-    .sb-user{display:flex;align-items:center;gap:.6rem;padding:.6rem .8rem;border-radius:6px;background:rgba(255,255,255,.03)}
-    .sb-avatar{width:28px;height:28px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;font-family:var(--font-title);font-size:.65rem;font-weight:800;color:#fff;flex-shrink:0}
-    .sb-user-info{flex:1;min-width:0}
-    .sb-user-name{font-size:.75rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .sb-user-role{font-size:.62rem;color:var(--txt3)}
-    .sb-logout{width:22px;height:22px;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:4px;transition:background var(--tr);flex-shrink:0}
-    .sb-logout:hover{background:rgba(220,38,38,.15)}
-    .sb-logout svg{width:13px;height:13px;stroke:#ef4444;fill:none;stroke-width:2}
+    /* NAV */
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;border-bottom:1px solid transparent;transition:background var(--transition),border var(--transition),backdrop-filter var(--transition)}
+    nav.scrolled{background:rgba(14,14,14,.88);border-bottom-color:var(--border);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+    [data-theme="light"] nav.scrolled{background:rgba(244,244,245,.88)}
+    .nav-inner{display:flex;align-items:center;justify-content:space-between;height:72px;padding:0 2rem;max-width:1200px;margin:0 auto}
+    .nav-logo{display:flex;align-items:center;gap:.7rem}
+    .logo-icon-wrap{width:40px;height:40px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .logo-icon-wrap svg{width:30px;height:30px;color:#fff}
+    .logo-text{display:flex;flex-direction:column;line-height:1}
+    .logo-spv{font-family:var(--font-title);font-weight:900;font-size:1.15rem;letter-spacing:.04em;color:var(--text-primary)}
+    .logo-sub{font-family:var(--font-title);font-size:.5rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)}
+    .nav-links{display:flex;align-items:center;gap:2rem;list-style:none}
+    .nav-links a{font-size:.82rem;font-weight:500;color:var(--text-secondary);transition:color var(--transition);position:relative}
+    .nav-links a::after{content:'';position:absolute;bottom:-3px;left:0;width:0;height:1px;background:var(--blue);transition:width var(--transition)}
+    .nav-links a:hover{color:var(--text-primary)}.nav-links a:hover::after{width:100%}
+    .nav-right{display:flex;align-items:center;gap:1rem}
+    .theme-toggle{width:52px;height:28px;padding:3px;border-radius:999px;cursor:pointer;position:relative;flex-shrink:0;display:flex;align-items:center}
+    [data-theme="dark"] .theme-toggle{background:#1a1a1a;border:1px solid #333}
+    [data-theme="light"] .theme-toggle{background:#e8e8e8;border:1px solid #d0d0d0}
+    .toggle-knob{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;transition:transform .35s cubic-bezier(.34,1.56,.64,1),background var(--transition);position:absolute;left:3px}
+    [data-theme="dark"] .toggle-knob{transform:translateX(0);background:#333}
+    [data-theme="light"] .toggle-knob{transform:translateX(24px);background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+    .t-icon{width:13px;height:13px;stroke-width:1.8;fill:none}
+    [data-theme="dark"] .t-icon{stroke:#aaa}[data-theme="light"] .t-icon{stroke:#555}
+    .btn-nav-cta{display:inline-flex;align-items:center;gap:.4rem;padding:.55rem 1.1rem;background:var(--blue);color:#fff;font-size:.8rem;font-weight:600;letter-spacing:.04em;border-radius:4px;transition:background var(--transition),transform var(--transition),box-shadow var(--transition)}
+    .btn-nav-cta:hover{background:var(--blue-light);transform:translateY(-1px);box-shadow:var(--shadow-blue)}
+    .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:6px;background:none;border:none;outline:none}
+    .hamburger span{display:block;width:22px;height:2px;background:currentColor;border-radius:2px;transition:all .25s}
+    .mobile-menu{display:none;position:fixed;top:72px;left:0;right:0;background:var(--bg);border-bottom:1px solid var(--border);padding:1.5rem 2rem 2rem;z-index:99;flex-direction:column;gap:1rem}
+    .mobile-menu.open{display:flex}
+    .mobile-menu a{font-size:1rem;font-weight:500;color:var(--text-secondary);padding:.5rem 0;border-bottom:1px solid var(--border)}
 
-    /* ── MAIN ── */
-    .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
-    .topbar{height:56px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 1.8rem;flex-shrink:0}
-    .topbar-left{display:flex;align-items:center;gap:1rem}
-    .page-title{font-family:var(--font-title);font-weight:700;font-size:1rem;letter-spacing:-.01em}
-    .page-sub{font-size:.72rem;color:var(--txt3);font-family:var(--font-mono)}
-    .topbar-right{display:flex;align-items:center;gap:.8rem}
-    .live-dot{width:7px;height:7px;border-radius:50%;background:#22c55e;animation:livePulse 2s infinite;flex-shrink:0}
-    @keyframes livePulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}50%{box-shadow:0 0 0 5px rgba(34,197,94,0)}}
-    .live-label{font-size:.72rem;color:#22c55e;font-weight:600;font-family:var(--font-mono)}
-    .btn-refresh{display:inline-flex;align-items:center;gap:.4rem;padding:.4rem .9rem;background:rgba(255,255,255,.05);border:1px solid var(--border-s);border-radius:4px;color:var(--txt2);font-size:.75rem;font-weight:500;cursor:pointer;transition:all var(--tr);font-family:var(--font-body)}
-    .btn-refresh:hover{background:rgba(255,255,255,.08);color:var(--txt)}
-    .btn-refresh svg{width:13px;height:13px;stroke:currentColor;fill:none}
-    .date-range{display:flex;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:4px;overflow:hidden}
-    .date-btn{padding:.35rem .75rem;font-size:.72rem;font-weight:600;cursor:pointer;color:var(--txt2);transition:all var(--tr);font-family:var(--font-title);letter-spacing:.04em;border:none;background:none}
-    .date-btn.active{background:var(--blue);color:#fff}
-    .date-btn:hover:not(.active){background:rgba(255,255,255,.05);color:var(--txt)}
-    .content{flex:1;overflow-y:auto;padding:1.5rem 1.8rem}
+    /* HERO */
+    #hero{min-height:100dvh;display:flex;align-items:center;position:relative;overflow:hidden;padding:0}
+    .hero-grid{position:absolute;inset:0;background-image:linear-gradient(var(--border) 1px,transparent 1px),linear-gradient(90deg,var(--border) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 70% 70% at 60% 50%,transparent 30%,black 100%);-webkit-mask-image:radial-gradient(ellipse 70% 70% at 60% 50%,transparent 30%,black 100%)}
+    .hero-radial{position:absolute;top:-20%;right:-10%;width:60vw;height:60vw;background:radial-gradient(circle,rgba(31,58,138,.18) 0%,transparent 65%);pointer-events:none}
+    .hero-content{position:relative;z-index:1;display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center;max-width:1200px;margin:0 auto;padding:8rem 2rem 4rem;width:100%}
+    .hero-left{display:flex;flex-direction:column;gap:2rem}
+    .hero-badge{display:inline-flex;align-items:center;gap:.5rem;padding:.35rem .9rem;border:1px solid rgba(31,58,138,.4);border-radius:999px;background:rgba(31,58,138,.1);width:fit-content}
+    .hero-badge-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);animation:pulse 2s infinite}
+    @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}
+    .hero-title{font-family:var(--font-title);font-weight:900;font-size:clamp(3rem,6vw,5.5rem);line-height:.92;letter-spacing:-.03em}
+    .hero-title-accent{color:var(--blue);display:block}
+    .hero-subtitle{font-size:1rem;color:var(--text-secondary);line-height:1.7;max-width:480px}
+    .hero-ctas{display:flex;gap:.8rem;flex-wrap:wrap}
+    .btn-primary{display:inline-flex;align-items:center;gap:.55rem;padding:.9rem 1.8rem;background:var(--blue);color:#fff;font-size:.875rem;font-weight:600;border-radius:4px;transition:background var(--transition),transform var(--transition),box-shadow var(--transition)}
+    .btn-primary:hover{background:var(--blue-light);transform:translateY(-2px);box-shadow:var(--shadow-blue)}
+    .btn-secondary{display:inline-flex;align-items:center;gap:.55rem;padding:.9rem 1.8rem;background:transparent;color:var(--text-primary);font-size:.875rem;font-weight:600;border-radius:4px;border:1px solid var(--border-strong);transition:all var(--transition)}
+    .btn-secondary:hover{border-color:var(--blue);color:var(--blue);transform:translateY(-2px)}
+    .btn-whatsapp{display:inline-flex;align-items:center;gap:.55rem;padding:.9rem 1.8rem;background:#25D366;color:#fff;font-size:.875rem;font-weight:600;border-radius:4px;transition:all var(--transition)}
+    .btn-whatsapp:hover{background:#1ebe5a;transform:translateY(-2px);box-shadow:0 8px 24px rgba(37,211,102,.3)}
+    .hero-stats{display:flex;gap:2rem;padding-top:1rem;border-top:1px solid var(--border)}
+    .stat{display:flex;flex-direction:column;gap:.2rem}
+    .stat-number{font-family:var(--font-title);font-weight:900;font-size:1.6rem;letter-spacing:-.03em}
+    .stat-label{font-size:.72rem;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase}
+    .hero-visual{position:relative;height:520px}
+    .hero-card-main{position:absolute;inset:0;border-radius:12px;background:var(--bg-card);border:1px solid var(--border);overflow:hidden}
+    .hero-card-main img{width:100%;height:100%;object-fit:cover;opacity:.7;filter:grayscale(20%)}
+    [data-theme="light"] .hero-card-main img{opacity:.85}
+    .hero-card-overlay{position:absolute;inset:0;background:linear-gradient(to top,var(--bg) 0%,transparent 60%)}
+    .hero-card-badge{position:absolute;top:1.2rem;left:1.2rem;background:var(--blue);color:#fff;font-family:var(--font-title);font-size:.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;padding:.3rem .7rem;border-radius:2px}
+    .hero-float-card{position:absolute;bottom:2rem;right:-1.5rem;background:var(--bg-card);border:1px solid var(--border-strong);border-radius:10px;padding:1rem 1.2rem;display:flex;align-items:center;gap:.8rem;box-shadow:var(--shadow);animation:floatY 4s ease-in-out infinite;z-index:2}
+    @keyframes floatY{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .float-icon{width:36px;height:36px;background:rgba(31,58,138,.15);border-radius:8px;display:flex;align-items:center;justify-content:center}
+    .float-icon svg{width:18px;height:18px;stroke:var(--blue);fill:none}
+    .float-text{display:flex;flex-direction:column}
+    .float-t1{font-family:var(--font-title);font-weight:700;font-size:.85rem}
+    .float-t2{font-size:.7rem;color:var(--text-muted)}
+    .hero-float-card2{position:absolute;top:2.5rem;right:-.5rem;background:var(--blue);border-radius:8px;padding:.7rem 1rem;display:flex;align-items:center;gap:.5rem;animation:floatY 3.5s ease-in-out 1s infinite;z-index:2}
+    .float2-icon svg{width:14px;height:14px;stroke:#fff;fill:none}
+    .float2-text{font-family:var(--font-title);font-weight:700;font-size:.75rem;color:#fff;white-space:nowrap}
 
-    /* ── PAGES ── */
-    .page{display:none}.page.active{display:block}
+    /* GARANTIES */
+    #garanties{background:var(--bg-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+    .section-header{display:flex;flex-direction:column;gap:.8rem;margin-bottom:3.5rem}
+    .section-header.center{align-items:center;text-align:center}
+    .guarantee-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border:1px solid var(--border);border-radius:8px;overflow:hidden}
+    .guarantee-card{background:var(--bg-card);padding:2rem 1.8rem;display:flex;flex-direction:column;gap:.9rem;transition:background var(--transition);position:relative;overflow:hidden}
+    .guarantee-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--blue);transform:scaleX(0);transform-origin:left;transition:transform .4s ease}
+    .guarantee-card:hover{background:var(--bg-card-hover)}.guarantee-card:hover::before{transform:scaleX(1)}
+    .guarantee-icon{width:40px;height:40px;background:rgba(31,58,138,.12);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .guarantee-icon svg{width:20px;height:20px;stroke:var(--blue);stroke-width:1.8;fill:none}
+    .guarantee-num{font-family:var(--font-title);font-size:.6rem;font-weight:700;letter-spacing:.14em;color:var(--text-muted)}
 
-    /* ── STAT CARDS ── */
-    .cards-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.5rem}
-    .stat-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.2rem 1.4rem;position:relative;overflow:hidden;transition:border-color var(--tr),box-shadow var(--tr)}
-    .stat-card:hover{border-color:var(--border-s);box-shadow:var(--shadow)}
-    .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;border-radius:2px 2px 0 0;opacity:0;transition:opacity var(--tr)}
-    .stat-card:hover::before{opacity:1}
-    .sc-blue::before{background:var(--blue)}
-    .sc-green::before{background:var(--green)}
-    .sc-gold::before{background:var(--gold)}
-    .sc-orange::before{background:var(--orange)}
-    .stat-label{font-family:var(--font-title);font-size:.58rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);margin-bottom:.6rem;display:flex;align-items:center;gap:.4rem}
-    .stat-label svg{width:11px;height:11px;stroke:currentColor;fill:none;stroke-width:2}
-    .stat-value{font-family:var(--font-title);font-weight:900;font-size:2rem;letter-spacing:-.04em;line-height:1}
-    .stat-delta{display:inline-flex;align-items:center;gap:.2rem;margin-top:.5rem;font-size:.7rem;font-weight:600;font-family:var(--font-mono)}
-    .delta-up{color:#22c55e}.delta-down{color:#ef4444}.delta-neu{color:var(--txt3)}
-    .stat-foot{font-size:.68rem;color:var(--txt3);margin-top:.3rem}
+    /* SERVICES */
+    #services{background:var(--bg)}
+    .services-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+    .services-row-2{display:grid;grid-template-columns:repeat(2,1fr);gap:1.5rem;max-width:800px;margin:1.5rem auto 0}
+    .service-card{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:2rem;display:flex;flex-direction:column;gap:1rem;transition:all var(--transition);position:relative;overflow:hidden;cursor:default}
+    .service-card::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--blue),var(--blue-light));transform:scaleX(0);transform-origin:left;transition:transform .4s ease}
+    .service-card:hover{border-color:rgba(31,58,138,.3);transform:translateY(-4px);box-shadow:var(--shadow)}.service-card:hover::after{transform:scaleX(1)}
+    .service-icon-wrap{width:48px;height:48px;background:rgba(31,58,138,.1);border-radius:10px;display:flex;align-items:center;justify-content:center}
+    .service-icon-wrap svg{width:24px;height:24px;stroke:var(--blue);stroke-width:1.7;fill:none}
+    .service-desc{font-size:.85rem;color:var(--text-secondary);line-height:1.65;flex:1}
+    .btn-link{display:inline-flex;align-items:center;gap:.4rem;font-size:.8rem;font-weight:600;color:var(--blue);transition:gap var(--transition);margin-top:auto;width:fit-content;cursor:pointer;background:none;border:none;padding:0;font-family:var(--font-body)}
+    .btn-link svg{width:14px;height:14px;stroke:var(--blue);fill:none;transition:transform var(--transition)}
+    .btn-link:hover{gap:.7rem}.btn-link:hover svg{transform:translateX(3px)}
 
-    /* ── CHARTS ── */
-    .charts-row{display:grid;grid-template-columns:2fr 1fr;gap:1rem;margin-bottom:1rem}
-    .chart-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.3rem}
-    .chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem}
-    .chart-title{font-family:var(--font-title);font-weight:700;font-size:.82rem;letter-spacing:-.01em}
-    .chart-sub{font-size:.68rem;color:var(--txt3);margin-top:.1rem}
-    .chart-wrap{position:relative}
+    /* PROCESS */
+    .process-steps{display:flex;flex-direction:column}
+    .process-step{display:flex;gap:2rem;padding:1.8rem 0;position:relative}
+    .process-step:not(:last-child){border-bottom:1px solid var(--border)}
+    .step-num{width:44px;height:44px;border-radius:50%;background:var(--bg-card);border:2px solid var(--border-strong);display:flex;align-items:center;justify-content:center;font-family:var(--font-title);font-weight:800;font-size:.85rem;color:var(--text-muted);transition:all .4s ease;flex-shrink:0;z-index:1}
+    .process-step.active .step-num,.process-step:hover .step-num{background:var(--blue);border-color:var(--blue);color:#fff}
+    .step-content{flex:1;padding-top:.6rem}
+    .step-title{font-family:var(--font-title);font-weight:700;font-size:1rem;margin-bottom:.4rem}
+    .step-desc{font-size:.875rem;color:var(--text-secondary);line-height:1.6}
+    .step-tag{display:inline-block;margin-top:.7rem;padding:.2rem .65rem;background:rgba(31,58,138,.1);color:var(--blue);font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-radius:2px}
+    .step-tag.gold{background:rgba(201,163,39,.12);color:#c9a327}
+    .process-cta-block{margin-top:2.5rem;padding:2.5rem;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap}
+    .process-cta-text h3{font-family:var(--font-title);font-weight:800;font-size:1.3rem;color:#fff;margin-bottom:.3rem}
+    .process-cta-text p{font-size:.875rem;color:rgba(255,255,255,.7)}
+    .btn-white{display:inline-flex;align-items:center;gap:.5rem;padding:.85rem 1.8rem;background:#fff;color:var(--blue);font-size:.875rem;font-weight:700;border-radius:4px;transition:all var(--transition);white-space:nowrap}
+    .btn-white:hover{background:#e8f0ff;transform:translateY(-2px)}
 
-    /* ── TABLE ── */
-    .table-card{background:var(--card);border:1px solid var(--border);border-radius:10px;margin-bottom:1rem;overflow:hidden}
-    .table-header{padding:1rem 1.3rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-    .table-header h3{font-family:var(--font-title);font-weight:700;font-size:.82rem}
-    table{width:100%;border-collapse:collapse}
-    th{font-family:var(--font-title);font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3);padding:.65rem 1.3rem;text-align:left;border-bottom:1px solid var(--border);background:rgba(0,0,0,.2)}
-    td{font-size:.78rem;padding:.7rem 1.3rem;border-bottom:1px solid var(--border);color:var(--txt2)}
-    tr:last-child td{border-bottom:none}
-    tr:hover td{background:rgba(255,255,255,.02);color:var(--txt)}
-    .badge{display:inline-flex;align-items:center;gap:.3rem;padding:.2rem .6rem;border-radius:999px;font-size:.65rem;font-weight:600;font-family:var(--font-title);letter-spacing:.06em}
-    .badge-blue{background:rgba(31,58,138,.2);color:#6b9ef8;border:1px solid rgba(31,58,138,.3)}
-    .badge-green{background:rgba(22,163,74,.15);color:#4ade80;border:1px solid rgba(22,163,74,.3)}
-    .badge-gold{background:rgba(201,163,39,.12);color:#f0cc4e;border:1px solid rgba(201,163,39,.2)}
-    .badge-orange{background:rgba(234,88,12,.12);color:#fb923c;border:1px solid rgba(234,88,12,.2)}
-    .badge-gray{background:rgba(255,255,255,.05);color:var(--txt2);border:1px solid var(--border-s)}
-    .mono{font-family:var(--font-mono);font-size:.72rem}
+    /* ZONE */
+    #zone{background:var(--bg)}
+    .zone-layout{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:center}
 
-    /* ── HEATMAP ── */
-    .heatmap-grid{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;padding:0 .2rem}
-    .hm-cell{height:28px;border-radius:3px;transition:all var(--tr);cursor:default;position:relative}
-    .hm-cell:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:rgba(0,0,0,.9);color:#fff;font-size:.62rem;white-space:nowrap;padding:.2rem .5rem;border-radius:4px;pointer-events:none;z-index:99}
-    .hm-labels{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;padding:.4rem .2rem 0}
-    .hm-label{font-family:var(--font-mono);font-size:.5rem;color:var(--txt3);text-align:center}
+    /* === NEW 3D MAP CANVAS (drop-in) === */
+    .zone-map-visual{
+      position:relative;height:440px;background:var(--bg-card);
+      border:1px solid var(--border);border-radius:12px;overflow:hidden;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .zone-map-visual canvas{width:100%;height:100%;display:block}
+    .zone-dept-number{
+      position:absolute;top:1rem;right:1.2rem;z-index:3;
+      font-family:var(--font-title);font-weight:900;font-size:2.8rem;
+      color:rgba(31,58,138,.18);letter-spacing:-.05em;pointer-events:none;user-select:none
+    }
+    .zone-map-badge{
+      position:absolute;bottom:1.2rem;left:1.2rem;z-index:3;
+      background:var(--blue);color:#fff;font-family:var(--font-title);
+      font-size:.62rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;
+      padding:.3rem .7rem;border-radius:2px;display:flex;align-items:center;gap:.4rem
+    }
+    .zone-map-badge-dot{width:6px;height:6px;border-radius:50%;background:#fff;animation:pulse 2s infinite}
 
-    /* ── SCROLL DEPTH ── */
-    .depth-bars{display:flex;flex-direction:column;gap:.7rem;padding:.2rem 0}
-    .depth-row{display:flex;align-items:center;gap:1rem}
-    .depth-label{font-family:var(--font-mono);font-size:.7rem;color:var(--txt2);width:40px;flex-shrink:0}
-    .depth-bar-wrap{flex:1;height:8px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden}
-    .depth-bar{height:100%;border-radius:999px;transition:width 1s cubic-bezier(.34,1.56,.64,1)}
-    .depth-pct{font-family:var(--font-mono);font-size:.68rem;color:var(--txt3);width:38px;text-align:right;flex-shrink:0}
+    /* Tooltip (hover city) */
+    .zone-tip{
+      position:absolute;z-index:6;transform:translate(-50%,-120%);
+      background:rgba(20,20,20,.92);
+      border:1px solid rgba(255,255,255,.14);
+      backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+      padding:.45rem .6rem;border-radius:8px;font-size:.78rem;
+      color:#fff;white-space:nowrap;pointer-events:none;
+      opacity:0;transition:opacity .12s ease;box-shadow:0 10px 28px rgba(0,0,0,.55);
+    }
+    .zone-tip small{display:block;color:rgba(255,255,255,.55);font-size:.68rem;margin-top:2px}
+    .zone-tip.on{opacity:1}
 
-    /* ── UTM GENERATOR ── */
-    .utm-section{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
-    .utm-builder{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:1.3rem}
-    .utm-title{font-family:var(--font-title);font-weight:700;font-size:.82rem;margin-bottom:1.1rem}
-    .input-group{display:flex;flex-direction:column;gap:.3rem;margin-bottom:.8rem}
-    .input-group label{font-family:var(--font-title);font-size:.58rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--txt3)}
-    .input-group input,.input-group select{width:100%;padding:.55rem .8rem;background:rgba(255,255,255,.04);border:1px solid var(--border-s);border-radius:5px;color:var(--txt);font-family:var(--font-body);font-size:.8rem;outline:none;transition:border-color var(--tr)}
-    .input-group input:focus,.input-group select:focus{border-color:rgba(31,58,138,.6);box-shadow:0 0 0 3px rgba(31,58,138,.1)}
-    .input-group select option{background:var(--card)}
-    .utm-preview{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:6px;padding:.8rem 1rem;margin:1rem 0;font-family:var(--font-mono);font-size:.68rem;color:#6b9ef8;word-break:break-all;min-height:48px;line-height:1.5}
-    .utm-actions{display:flex;gap:.6rem}
-    .btn-primary{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.2rem;background:var(--blue);color:#fff;border-radius:5px;font-family:var(--font-title);font-weight:700;font-size:.75rem;letter-spacing:.04em;cursor:pointer;transition:all var(--tr);border:none;text-transform:uppercase}
-    .btn-primary:hover{background:var(--blue-l);transform:translateY(-1px)}
-    .btn-sec{display:inline-flex;align-items:center;gap:.4rem;padding:.6rem 1.2rem;background:rgba(255,255,255,.05);color:var(--txt2);border-radius:5px;font-family:var(--font-title);font-weight:600;font-size:.75rem;letter-spacing:.04em;cursor:pointer;transition:all var(--tr);border:1px solid var(--border-s)}
-    .btn-sec:hover{background:rgba(255,255,255,.08);color:var(--txt)}
-    .btn-sec svg,.btn-primary svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0}
+    .zone-right{display:flex;flex-direction:column;gap:2rem}
+    .cities-grid{display:flex;flex-wrap:wrap;gap:.5rem}
+    .city-tag{padding:.4rem .9rem;border:1px solid var(--border-strong);border-radius:999px;font-size:.78rem;font-weight:500;color:var(--text-secondary);transition:all var(--transition);cursor:default}
+    .city-tag:hover{border-color:var(--blue);color:var(--blue);background:rgba(31,58,138,.06)}
+    .zone-note{display:flex;align-items:center;gap:.8rem;padding:1rem 1.2rem;background:rgba(31,58,138,.07);border:1px solid rgba(31,58,138,.2);border-radius:6px}
+    .zone-note svg{width:18px;height:18px;stroke:var(--blue);fill:none;flex-shrink:0}
+    .zone-note p{font-size:.82rem;color:var(--text-secondary)}
+    .zone-note strong{color:var(--text-primary)}
 
-    /* ── CONVERSION ── */
-    .conv-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem}
+    /* CONTACT */
+    #contact{background:var(--bg-2);border-top:1px solid var(--border)}
+    .contact-layout{display:grid;grid-template-columns:1fr 1fr;gap:4rem;align-items:start}
+    .contact-left{display:flex;flex-direction:column;gap:2rem}
+    .contact-items{display:flex;flex-direction:column;gap:1rem}
+    .contact-item{display:flex;align-items:center;gap:1rem;padding:1.2rem 1.5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px;transition:all var(--transition)}
+    .contact-item:hover{border-color:rgba(31,58,138,.4);transform:translateX(4px);box-shadow:var(--shadow)}
+    .c-icon{width:42px;height:42px;background:rgba(31,58,138,.1);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .c-icon svg{width:20px;height:20px;stroke:var(--blue);fill:none}
+    .c-icon.wa{background:rgba(37,211,102,.1)}
+    .c-icon.wa svg{stroke:none;fill:#25D366}
+    .c-text{display:flex;flex-direction:column}
+    .c-label{font-size:.7rem;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase}
+    .c-value{font-weight:600;font-size:.95rem}
+    .c-arrow{margin-left:auto;width:16px;height:16px;stroke:var(--text-muted);stroke-width:2;fill:none;flex-shrink:0}
+    .contact-right{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:2.5rem;display:flex;flex-direction:column;gap:1.5rem}
+    .form-title{font-family:var(--font-title);font-weight:700;font-size:1.1rem}
+    .form-group{display:flex;flex-direction:column;gap:.4rem}
+    .form-group label{font-size:.75rem;font-weight:500;color:var(--text-muted);letter-spacing:.04em;text-transform:uppercase}
+    .form-group input,.form-group textarea,.form-group select{width:100%;padding:.75rem 1rem;background:var(--bg);border:1px solid var(--border-strong);border-radius:4px;color:var(--text-primary);font-family:var(--font-body);font-size:.875rem;outline:none;transition:border-color var(--transition),box-shadow var(--transition)}
+    .form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--blue)}
+    .form-group textarea{resize:none;height:100px}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+    .form-group input.error,.form-group textarea.error,.form-group select.error{border-color:#e53e3e !important;box-shadow:0 0 0 3px rgba(229,62,62,.12)}
+    .form-group .err-msg{display:none;font-size:.72rem;color:#e53e3e;margin-top:.2rem;font-weight:500}
+    .form-group.has-error .err-msg{display:block}
+    /* SLIDE BUTTON */
+    .slide-btn-wrap{position:relative;width:100%;height:52px;border-radius:999px;background:var(--bg);border:1px solid var(--border-strong);overflow:hidden;user-select:none;touch-action:none}
+    .slide-btn-fill{position:absolute;inset-y:0;left:0;width:56px;border-radius:999px;background:var(--blue);transition:background .3s}
+    .slide-btn-fill.success{background:#16a34a}
+    .slide-btn-fill.error-fill{background:#dc2626}
+    .slide-btn-handle{position:absolute;top:4px;left:4px;width:44px;height:44px;border-radius:50%;background:var(--blue);display:flex;align-items:center;justify-content:center;cursor:grab;transition:transform .15s,box-shadow .15s,background .3s;box-shadow:0 2px 12px rgba(31,58,138,.4);z-index:2}
+    .slide-btn-handle:active{cursor:grabbing;transform:scale(1.08);box-shadow:0 4px 20px rgba(31,58,138,.55)}
+    .slide-btn-handle svg{width:18px;height:18px;stroke:#fff;fill:none;pointer-events:none;transition:opacity .2s}
+    .slide-btn-handle.success{background:#16a34a;cursor:default;box-shadow:0 2px 12px rgba(22,163,74,.4)}
+    .slide-btn-handle.error-h{background:#dc2626;animation:shake .4s ease;cursor:grab}
+    .slide-btn-label{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:var(--font-title);font-weight:700;font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted);pointer-events:none;padding-left:56px;transition:opacity .2s}
+    .slide-btn-label .slide-arrows{display:inline-flex;gap:2px;margin-right:.5rem;opacity:.4}
+    .slide-btn-status{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:.6rem;font-family:var(--font-title);font-weight:700;font-size:.85rem;letter-spacing:.04em;pointer-events:none;opacity:0;transition:opacity .25s}
+    .slide-btn-status.show{opacity:1}
+    .slide-btn-status.success-msg{color:#16a34a}
+    .slide-btn-status.error-msg{color:#dc2626}
+    .slide-btn-status .s-spinner{width:15px;height:15px;border:2px solid rgba(31,58,138,.25);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+    @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+    @keyframes slideUpBanner{from{transform:translateX(-50%) translateY(20px);opacity:0}to{transform:translateX(-50%) translateY(0);opacity:1}}
+    /* ── COOKIE BURST ── */
+    .cookie-burst{pointer-events:none;position:fixed;z-index:99999;font-size:1.4rem;animation:cookieFly .9s cubic-bezier(.2,1,.3,1) forwards}
+    @keyframes cookieFly{
+      0%{opacity:1;transform:translate(-50%,-50%) scale(.4) rotate(0deg)}
+      60%{opacity:1;transform:translate(var(--tx),var(--ty)) scale(1.1) rotate(var(--rot))}
+      100%{opacity:0;transform:translate(var(--tx2),var(--ty2)) scale(.6) rotate(var(--rot2))}
+    }
+    /* ── HAPTIC CLICK RIPPLE ── */
+    .haptic-ripple{pointer-events:none;position:fixed;z-index:99998;width:0;height:0}
+    .haptic-ripple::after{content:'';position:absolute;top:-20px;left:-20px;width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,.18);transform:scale(0);animation:hapticPop .35s cubic-bezier(.2,1,.3,1) forwards}
+    @keyframes hapticPop{0%{transform:scale(0);opacity:.7}100%{transform:scale(1.8);opacity:0}}
 
-    /* ── LOGIN SCREEN ── */
-    #loginScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:999}
-    .login-box{width:380px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:2.5rem;box-shadow:0 24px 80px rgba(0,0,0,.8)}
-    .login-logo{display:flex;align-items:center;gap:.8rem;margin-bottom:2rem;justify-content:center}
-    .login-logo-icon{width:56px;height:56px;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:center;overflow:hidden}
-    .login-logo-icon svg{width:50px;height:50px;fill:#fff;display:block}
-    .login-title-wrap h1{font-family:var(--font-title);font-weight:900;font-size:1.1rem}
-    .login-title-wrap p{font-size:.72rem;color:var(--txt3);font-family:var(--font-mono)}
-    .login-field{margin-bottom:1rem}
-    .login-field label{display:block;font-family:var(--font-title);font-size:.6rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--txt3);margin-bottom:.4rem}
-    .login-field input{width:100%;padding:.75rem 1rem;background:rgba(255,255,255,.04);border:1px solid var(--border-s);border-radius:6px;color:var(--txt);font-family:var(--font-body);font-size:.875rem;outline:none;transition:border-color var(--tr)}
-    .login-field input:focus{border-color:rgba(31,58,138,.6);box-shadow:0 0 0 3px rgba(31,58,138,.12)}
-    .login-btn{width:100%;padding:.8rem;background:var(--blue);color:#fff;border-radius:6px;font-family:var(--font-title);font-weight:700;font-size:.85rem;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:all var(--tr);border:none;margin-top:.5rem;display:flex;align-items:center;justify-content:center;gap:.5rem}
-    .login-btn:hover{background:var(--blue-l);transform:translateY(-1px)}
-    .login-error{color:#ef4444;font-size:.75rem;margin-top:.6rem;text-align:center;min-height:1rem;font-family:var(--font-mono)}
-    #dashApp{display:none;width:100%;height:100%;overflow:hidden;display:flex;flex-direction:row}
+    select option{background:var(--bg-card)}
 
-    /* ── MISC ── */
-    .empty-state{padding:3rem;text-align:center;color:var(--txt3);font-size:.82rem}
-    .empty-state svg{width:36px;height:36px;stroke:var(--txt3);fill:none;margin:0 auto 1rem}
-    .tag-source{display:inline-flex;align-items:center;gap:.3rem;font-size:.7rem;padding:.15rem .5rem;border-radius:3px;font-family:var(--font-mono)}
-    .tag-direct{background:rgba(107,158,248,.1);color:#6b9ef8}
-    .tag-organic{background:rgba(74,222,128,.1);color:#4ade80}
-    .tag-social{background:rgba(251,146,60,.1);color:#fb923c}
-    .tag-email{background:rgba(240,204,78,.1);color:#f0cc4e}
-    .tag-other{background:rgba(255,255,255,.05);color:var(--txt2)}
-    .progress-bar{height:4px;background:rgba(255,255,255,.06);border-radius:999px;overflow:hidden;margin-top:.5rem}
-    .progress-fill{height:100%;border-radius:999px;background:var(--blue)}
-    .tooltip-copy{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(0);background:#22c55e;color:#fff;padding:.5rem 1.2rem;border-radius:999px;font-size:.75rem;font-weight:600;font-family:var(--font-title);opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
-    .tooltip-copy.show{opacity:1}
-    .section-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
-    .full-row{margin-bottom:1rem}
+    /* FOOTER */
+    footer{background:#0a0a0a;border-top:1px solid rgba(255,255,255,.06);padding:4rem 0 2rem}
+    .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
+    .footer-brand{display:flex;flex-direction:column;gap:1rem}
+    .footer-brand p{font-size:.85rem;color:rgba(255,255,255,.45);line-height:1.7;max-width:280px}
+    .footer-col h4{font-family:var(--font-title);font-size:.65rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:1rem}
+    .footer-col ul{list-style:none;display:flex;flex-direction:column;gap:.5rem}
+    .footer-col ul li a{font-size:.85rem;color:rgba(255,255,255,.55);transition:color var(--transition)}
+    .footer-col ul li a:hover{color:rgba(255,255,255,.9)}
+    .footer-bottom{padding-top:2rem;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap}
+    .footer-bottom p{font-size:.75rem;color:rgba(255,255,255,.25)}
+    .footer-cta{display:inline-flex;align-items:center;gap:.5rem;padding:.7rem 1.4rem;background:var(--blue);color:#fff;font-size:.8rem;font-weight:700;border-radius:4px;transition:background var(--transition)}
+    .footer-cta:hover{background:var(--blue-light)}
 
-    /* scrollbar */
-    ::-webkit-scrollbar{width:5px;height:5px}
-    ::-webkit-scrollbar-track{background:transparent}
-    ::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:99px}
-    ::-webkit-scrollbar-thumb:hover{background:rgba(255,255,255,.18)}
+    /* TIMELINE (Aceternity style) */
+    #process{background:var(--bg-2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:6rem 0 0}
+    .tl-wrapper{position:relative;max-width:1200px;margin:0 auto;padding:0 2rem 6rem}
+    .tl-track{position:absolute;left:calc(2rem + 19px);top:0;bottom:140px;width:2px;
+      background:linear-gradient(to bottom,transparent,var(--border) 4%,var(--border) 94%,transparent 100%);
+      mask-image:linear-gradient(to bottom,transparent 0%,black 4%,black 94%,transparent 100%);
+      -webkit-mask-image:linear-gradient(to bottom,transparent 0%,black 4%,black 94%,transparent 100%)}
+    .tl-fill{position:absolute;top:0;left:0;width:100%;height:0%;
+      background:linear-gradient(to bottom,var(--blue),#4d7aff 70%,rgba(31,58,138,.2));
+      border-radius:999px;transition:height .08s linear}
+    .tl-item{display:grid;grid-template-columns:260px 1fr;gap:4rem;padding:4rem 0 4rem 0;border-bottom:1px solid var(--border);align-items:start}
+    .tl-item:last-of-type{border-bottom:none}
+    .tl-left{display:flex;flex-direction:row;align-items:flex-start;gap:1.2rem;padding-top:.1rem;position:sticky;top:6rem;align-self:start}
+    .tl-dot{width:42px;height:42px;border-radius:50%;background:var(--bg);border:2px solid var(--border-strong);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .5s ease,border-color .5s ease,box-shadow .5s ease;z-index:2;position:relative}
+    .tl-dot span{font-family:var(--font-title);font-weight:800;font-size:.72rem;color:var(--text-muted);transition:color .5s}
+    .tl-item.tl-active .tl-dot{background:var(--blue);border-color:var(--blue);box-shadow:0 0 0 6px rgba(31,58,138,.18)}
+    .tl-item.tl-active .tl-dot span{color:#fff}
+    .tl-dot-gold{border-color:rgba(201,163,39,.6) !important;background:var(--bg-2) !important;z-index:3}
+    .tl-dot-gold span{color:#c9a327 !important}
+    .tl-item.tl-active .tl-dot-gold{background:var(--bg-2) !important;border-color:#c9a327 !important;box-shadow:0 0 0 6px rgba(201,163,39,.15) !important}
+    .tl-step-title{font-family:var(--font-title);font-weight:800;font-size:1.3rem;line-height:1.15;letter-spacing:-.02em;color:var(--text-muted);transition:color .5s ease;padding-top:.35rem}
+    .tl-item.tl-active .tl-step-title{color:var(--text-primary)}
+    .tl-right{padding-top:.4rem}
+    .tl-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;padding:2.2rem;transition:border-color .5s,box-shadow .5s}
+    .tl-item.tl-active .tl-card{border-color:rgba(31,58,138,.3);box-shadow:0 8px 32px rgba(31,58,138,.12)}
+    .tl-card-gold.tl-active,.tl-item.tl-active .tl-card-gold{border-color:rgba(201,163,39,.35) !important;box-shadow:0 8px 32px rgba(201,163,39,.1) !important}
+    .tl-desc{font-size:.925rem;color:var(--text-secondary);line-height:1.8;margin-bottom:1.2rem}
+    .tl-cta-row{padding-top:3.5rem}
+    @media(max-width:1024px){
+      .tl-item{grid-template-columns:200px 1fr;gap:2rem}
+      .tl-step-title{font-size:1.4rem}
+      .tl-left{top:5rem}
+    }
+    @media(max-width:768px){
+      .tl-item{grid-template-columns:1fr;padding:2.5rem 0}
+      .tl-left{position:relative;top:auto;flex-direction:row;align-items:center;gap:1rem}
+      .tl-step-title{font-size:1.1rem}
+      .tl-track{left:calc(2rem + 20px)}
+    }
 
-    @keyframes spin{to{transform:rotate(360deg)}}
-  /* INACTIVITY MODAL */
-  .inact-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9998;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .3s}
-  .inact-overlay.show{opacity:1;pointer-events:all}
-  .inact-box{background:var(--card);border:1px solid var(--border-s);border-radius:14px;padding:2rem 2.4rem;max-width:360px;width:90%;text-align:center;box-shadow:0 24px 80px rgba(0,0,0,.9)}
-  .inact-icon{width:48px;height:48px;border-radius:50%;background:rgba(234,88,12,.12);border:1px solid rgba(234,88,12,.2);display:flex;align-items:center;justify-content:center;margin:0 auto 1.2rem}
-  .inact-icon svg{width:22px;height:22px;stroke:#fb923c;fill:none;stroke-width:2}
-  .inact-title{font-family:var(--font-title);font-weight:700;font-size:1rem;margin-bottom:.5rem}
-  .inact-sub{font-size:.8rem;color:var(--txt2);line-height:1.5;margin-bottom:1.4rem}
-  .inact-counter{font-family:var(--font-mono);font-size:2rem;font-weight:700;color:#fb923c;margin-bottom:1.4rem;line-height:1}
-  .inact-btn{width:100%;padding:.75rem;background:var(--blue);color:#fff;border:none;border-radius:6px;font-family:var(--font-title);font-weight:700;font-size:.85rem;letter-spacing:.04em;cursor:pointer;transition:background var(--tr)}
-  .inact-btn:hover{background:var(--blue-l)}
-    .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+    /* SCROLL REVEAL */
+    .reveal{opacity:0;transform:translateY(30px);transition:opacity .7s ease,transform .7s ease}
+    .reveal.visible{opacity:1;transform:translateY(0)}
+    .reveal-delay-1{transition-delay:.1s}.reveal-delay-2{transition-delay:.2s}.reveal-delay-3{transition-delay:.3s}
+
+    /* FAB */
+    .fab{position:fixed;bottom:2rem;right:2rem;z-index:50;display:flex;flex-direction:column;align-items:flex-end;gap:.5rem}
+    .fab-btn{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 20px rgba(0,0,0,.3);transition:transform var(--transition)}
+    .fab-btn:hover{transform:scale(1.1)}
+    .fab-phone{background:var(--blue)}
+    .fab-phone svg{width:22px;height:22px;stroke:#fff;fill:none}
+
+    /* RESPONSIVE */
+    @media(max-width:1024px){
+      .hero-content{grid-template-columns:1fr;padding:9rem 2rem 4rem}
+      .hero-visual{display:none}
+      .services-grid{grid-template-columns:repeat(2,1fr)}
+      .services-row-2{max-width:100%;grid-template-columns:repeat(2,1fr)}
+      .zone-layout{grid-template-columns:1fr}
+      .contact-layout{grid-template-columns:1fr}
+      .footer-grid{grid-template-columns:1fr 1fr}
+      .process-layout-grid{grid-template-columns:1fr !important}
+    }
+    @media(max-width:768px){
+      nav .nav-links,nav .btn-nav-cta{display:none}
+      .hamburger{display:flex}
+      section{padding:4rem 0}
+      .guarantee-grid{grid-template-columns:1fr}
+      .services-grid,.services-row-2{grid-template-columns:1fr;max-width:100%}
+      .process-cta-block{flex-direction:column}
+      .form-row{grid-template-columns:1fr}
+      .footer-grid{grid-template-columns:1fr;gap:2rem}
+      .footer-bottom{flex-direction:column;align-items:flex-start}
+      .hero-ctas{flex-direction:column}
+      .hero-ctas a{justify-content:center}
+    }
   </style>
 </head>
 <body>
 
-<!-- LOGIN -->
-<div id="loginScreen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="login-logo-icon">
-        <svg viewBox="0 0 180 180" fill="#fff"><path d="M89.4 60.9L51.6 90.8c-.08.06-.16.07-.24.03-.08-.04-.12-.11-.12-.2V80.6c0-.04.02-.07.05-.1L89.2 50.5c.16-.12.32-.12.47 0L127.5 80.2c.14.11.19.25.19.43-.01 2.56-.01 4.74-.02 6.53-.01 1.03-.27 1.97-.81 2.82-.03.04-.06.04-.1.01L89.6 60.9c-.06-.04-.13-.04-.19 0z"/><path d="M98.57 108.28c-.04.03-.08.03-.11.02-.04-.01-.07-.04-.08-.08-.16-.34-.29-.59-.43-.78-.46-.65-1.28-1.86-2.47-3.64-.07-.1-.11-.21-.14-.32-.23-1.01-.25-2.6.44-3.53.4-.55.74-.93 1.02-1.14 1.89-1.4 2.92-2.13 4.44-3.55 1.95-1.85 3.58-3.69 4.84-6.09.25-.47.45-.96.6-1.46.27-.86.43-1.36.47-1.51.07-.24.08-.83.03-1.74-.01-.15-.04-.29-.1-.42-.04-.08-.18-.49-.42-1.22-.34-1.04-.98-1.95-1.72-2.7-.58-.6-1.27-.98-2.08-1.14-.65-.13-1.33.24-2.03.53-.17.07-.32.04-.43-.1-.89-1.07-1.73-2.12-2.51-3.16-.17-.23-.62-.45-.93-.63-.45-.28-.9-.32-1.37-.13-.38.15-.8.41-1.26.77-2.23 1.77-6.4 5.13-12.5 10.08-4.79 3.88-9.64 7.81-14.55 11.78-.97.78-1.5 1.31-1.59 1.58-.17.5-.21 1.02-.1 1.54.05.27.31.7.78 1.29 1.04 1.29 2.2 2.84 3.49 4.63.28.39.74 1.02 1.12 1.25 1.07.64 2.22.26 3.11-.49.97-.82 2.07-1.72 3.31-2.71 4.53-3.62 8.96-7.19 13.28-10.7.45-.37 1.02-.82 1.7-1.35.61-.47 1.18-.92 1.71-1.35 2.94-2.4 5.65-4.62 8.12-6.65.82-.67 1.04-1.5.68-2.48-.03-.07-.07-.14-.11-.2l-1.38-1.74c-.06-.07-.07-.15-.04-.24.04-.09.09-.14.18-.15.68-.12 1.63-.25 2.16.2.67.56 1.1 1.2 1.55 1.98.31.54.5 1.02.57 1.45.22 1.34.13 2.52-.27 3.54-.9 2.33-2.65 4.96-4.79 6.74-.32.27-.76.66-1.31 1.18-.94.89-2.33 1.77-3.23 2.48-.62.49-1.08.98-1.4 1.48-.21.34-.46.96-.73 1.86-.33 1.12 0 2.35.59 3.35.55.92 1.47 2.29 2.78 4.1.13.18.08.37-.18.56-.64.53-1.18.98-1.6 1.36-.04.03-.04.07 0 .11l1.73 2.19c.05.06.04.11-.07.17-2.08 1.15-4.18 2.17-6.31 3.06-.56.24-.92.46-1.41.6-.64.19-1.16.55-1.8.7-.49.11-.93.26-1.29.44-.5.25-.87.28-1.4.42-.09.03-.18.06-.27.1-.46.22-.95.38-1.45.49-.92.2-1.58.6-2.48.67-.47.04-1.07.18-1.8.42-.9.3-2.21.29-3.01.48-2.14.51-3.82.54-6.38.53-1.63-.01-2.66.02-4.04-.35-.89-.24-1.53-.39-1.91-.45l-.18-.05-1.71-.77c-.03-.01-.06-.03-.09-.05l-.88-.63c-.03-.02-.06-.05-.07-.08-.3-.42-.45-.87-.45-1.34-.01-12.9.01-23.21.02-30.92 0-.12.05-.22.14-.3l28.63-22.66c.06-.05.12-.05.18 0 3.46 2.67 5.19 4 5.2 4.01 1.7 1.32 3.14 2.45 4.31 3.39.05.04.31.24.79.6 3.09 2.37 8.92 6.9 17.47 13.58.46.36 1.16.91 1.26 1.56.03.22.04 1.55.03 4.01-.01.91-.37 1.24-1.04 1.97-.57.63-1.13 1.18-1.66 1.66-4.11 3.75-7.92 7.17-11.42 10.27-.22.19-.46.37-.7.55-.08.05-.09.12-.02.2l1.72 2.18c.05.06.04.12-.06.18l-3 2.17c-.14.1-.28.1-.4-.01-.76-.74-1.42-1.49-1.96-2.26-.04-.05-.09-.08-.15-.09-.06-.01-.11.01-.16.04z"/></svg>
+<!-- NAV -->
+<nav id="main-nav">
+  <div class="nav-inner">
+    <a href="#hero" class="nav-logo">
+      <div class="logo-icon-wrap">
+        <svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="M89.4 60.9L51.6 90.8c-.08.06-.16.07-.24.03-.08-.04-.12-.11-.12-.2V80.6c0-.04.02-.07.05-.1L89.2 50.5c.16-.12.32-.12.47 0L127.5 80.2c.14.11.19.25.19.43-.01 2.56-.01 4.74-.02 6.53-.01 1.03-.27 1.97-.81 2.82-.03.04-.06.04-.1.01L89.6 60.9c-.06-.04-.13-.04-.19 0z"/>
+          <path d="M98.57 108.28c-.04.03-.08.03-.11.02-.04-.01-.07-.04-.08-.08-.16-.34-.29-.59-.43-.78-.46-.65-1.28-1.86-2.47-3.64-.07-.1-.11-.21-.14-.32-.23-1.01-.25-2.6.44-3.53.4-.55.74-.93 1.02-1.14 1.89-1.4 2.92-2.13 4.44-3.55 1.95-1.85 3.58-3.69 4.84-6.09.25-.47.45-.96.6-1.46.27-.86.43-1.36.47-1.51.07-.24.08-.83.03-1.74-.01-.15-.04-.29-.1-.42-.04-.08-.18-.49-.42-1.22-.34-1.04-.98-1.95-1.72-2.7-.58-.6-1.27-.98-2.08-1.14-.65-.13-1.33.24-2.03.53-.17.07-.32.04-.43-.1-.89-1.07-1.73-2.12-2.51-3.16-.17-.23-.62-.45-.93-.63-.45-.28-.9-.32-1.37-.13-.38.15-.8.41-1.26.77-2.23 1.77-6.4 5.13-12.5 10.08-4.79 3.88-9.64 7.81-14.55 11.78-.97.78-1.5 1.31-1.59 1.58-.17.5-.21 1.02-.1 1.54.05.27.31.7.78 1.29 1.04 1.29 2.2 2.84 3.49 4.63.28.39.74 1.02 1.12 1.25 1.07.64 2.22.26 3.11-.49.97-.82 2.07-1.72 3.31-2.71 4.53-3.62 8.96-7.19 13.28-10.7.45-.37 1.02-.82 1.7-1.35.61-.47 1.18-.92 1.71-1.35 2.94-2.4 5.65-4.62 8.12-6.65.82-.67 1.04-1.5.68-2.48-.03-.07-.07-.14-.11-.2l-1.38-1.74c-.06-.07-.07-.15-.04-.24.04-.09.09-.14.18-.15.68-.12 1.63-.25 2.16.2.67.56 1.1 1.2 1.55 1.98.31.54.5 1.02.57 1.45.22 1.34.13 2.52-.27 3.54-.9 2.33-2.65 4.96-4.79 6.74-.32.27-.76.66-1.31 1.18-.94.89-2.33 1.77-3.23 2.48-.62.49-1.08.98-1.4 1.48-.21.34-.46.96-.73 1.86-.33 1.12 0 2.35.59 3.35.55.92 1.47 2.29 2.78 4.1.13.18.08.37-.18.56-.64.53-1.18.98-1.6 1.36-.04.03-.04.07 0 .11l1.73 2.19c.05.06.04.11-.07.17-2.08 1.15-4.18 2.17-6.31 3.06-.56.24-.92.46-1.41.6-.64.19-1.16.55-1.8.7-.49.11-.93.26-1.29.44-.5.25-.87.28-1.4.42-.09.03-.18.06-.27.1-.46.22-.95.38-1.45.49-.92.2-1.58.6-2.48.67-.47.04-1.07.18-1.8.42-.9.3-2.21.29-3.01.48-2.14.51-3.82.54-6.38.53-1.63-.01-2.66.02-4.04-.35-.89-.24-1.53-.39-1.91-.45l-.18-.05-1.71-.77c-.03-.01-.06-.03-.09-.05l-.88-.63c-.03-.02-.06-.05-.07-.08-.3-.42-.45-.87-.45-1.34-.01-12.9.01-23.21.02-30.92 0-.12.05-.22.14-.3l28.63-22.66c.06-.05.12-.05.18 0 3.46 2.67 5.19 4 5.2 4.01 1.7 1.32 3.14 2.45 4.31 3.39.05.04.31.24.79.6 3.09 2.37 8.92 6.9 17.47 13.58.46.36 1.16.91 1.26 1.56.03.22.04 1.55.03 4.01-.01.91-.37 1.24-1.04 1.97-.57.63-1.13 1.18-1.66 1.66-4.11 3.75-7.92 7.17-11.42 10.27-.22.19-.46.37-.7.55-.08.05-.09.12-.02.2l1.72 2.18c.05.06.04.12-.06.18l-3 2.17c-.14.1-.28.1-.4-.01-.76-.74-1.42-1.49-1.96-2.26-.04-.05-.09-.08-.15-.09-.06-.01-.11.01-.16.04z"/>
+          <path d="M120.33 91.66c.14.18.23.33.41.43.45.24.95.47 1.51.71.12.05.26.09.39.09 1.11.06 1.87.05 2.26-.03.44-.09 1.03-.37 1.77-.84.41-.26.93-.76 1.57-1.49 3.19-3.61 6.25-7.1 9.18-10.44.69-.79 1.18-1.28 1.48-1.48.5-.35 1.14-.62 1.91-.83.53-.14 1.16-.1 1.88.12.67.2 1.2.54 1.58 1.01.68.82.97 1.82.87 3-.04.5-.14.9-.29 1.18-.46.86-.96 1.56-1.49 2.09-.21.21-.87.76-1.98 1.66-3.15 2.55-6.13 4.95-8.95 7.19-.73.59-1.46 1.36-1.93 1.85-.07.07-.29.39-.66.95-.03.06-.06.12-.07.19l-.5 1.95c-.01.06-.01.12 0 .18l.45 2.21c.03.15.08.29.18.41.32.45.54.88.66 1.3.02.06.02.12.01.18-.08.3-.16.49-.25.57-.64.58-1.18 1.13-1.63 1.64-.05.05-.1.05-.15 0l-10.72-11.34c-.1-.11-.1-.21.02-.31l2.41-2.16c.03-.03.06-.02.08.01zm22.2-11.19c-.16-.16-.36-.28-.59-.35-.23-.07-.47-.09-.73-.05-.26.03-.52.11-.78.24-.26.13-.49.3-.7.51-.21.21-.38.44-.51.7-.13.25-.22.51-.26.77-.03.26-.02.51.04.74.06.23.17.43.33.6.16.16.36.28.59.35.23.07.47.09.73.06.26-.03.52-.11.78-.24.26-.13.49-.3.7-.51.21-.21.38-.44.52-.7.14-.25.22-.52.26-.78.04-.26.03-.51-.04-.73-.07-.23-.18-.43-.33-.6z"/>
+          <path d="M113.09 98.51l3.89-3.68c.05-.05.11-.07.18-.07.07.01.13.03.17.08l10.22 11.43c.1.11.1.22-.01.33l-3.48 3.48c-.05.05-.11.07-.18.07-.07 0-.13-.02-.17-.07l-10.62-11.23c-.11-.12-.1-.24.01-.33z"/>
+          <path d="M116.68 109.25c.02-.02.02-.05 0-.07-.03-.02-.06-.02-.08 0-.54.48-.98.94-1.65 1.46-.98.78-1.76 1.43-2.31 1.93-.12.12-.26.2-.41.26-.11.04-.19.02-.25-.07-.4-.56-.94-1.03-1.32-1.52-.03-.04-.49-.59-1.4-1.64-.12-.14-.24-.19-.35-.3-.05-.05-.07-.11-.05-.17l.25-.75c.02-.04.01-.08-.03-.11-.04-.03-.08-.04-.12-.02l-.57.24c-.13.06-.24.03-.34-.08l-2.41-2.69c-.1-.11-.09-.22.06-.32l6.32-5.98c.08-.07.16-.07.23.01l10.98 11.61c.03.03.03.07 0 .1l-6.1 6.7c-.09.1-.19.1-.29.01l-3.75-3.97c-.06-.07-.07-.14-.02-.22z"/>
+          <path d="M57.21 105.21c.02 0 .04.01.06.02.01.02.01.05 0 .07l-.5.82c-.06.1-.11.22-.15.33l-1.37 3.77c-.02.04-.03.09-.03.14-.1.77-.12 1.37-.26 2.03-.19.89-.19 2.1 0 3.07.1.45.17.89.21 1.34.02.15.06.29.13.43.45 1.0.71 1.55.77 1.65 0.96 1.67 2.31 2.87 4.05 3.61.6.25.99.42 1.17.5.13.06.27.1.41.12.87.16 1.62.33 2.27.5.62.16 1.21.24 1.77.26 2.15.05 4.17.05 6.06-.01 1.73-.06 3.73-.67 5.24-.73.03 0 .06-.01.09-.01l5.89-1.52c.49-.22 1.04-.4 1.62-.55.69-.18 1.21-.43 1.76-.6.69-.22 1.1-.36 1.24-.44.51-.28 1.06-.41 1.63-.65 4.04-1.69 7.95-3.71 11.73-6.06.68-.42 1.35-.84 2.02-1.26 1.25-.78 2.5-1.65 3.77-2.61.14-.11.27-.1.4.02.57.56.75.75 1.4 1.24.32.24.65.6 1.01 1.06.04.05.04.1 0 .16-.2.25-.37.44-.52.56-7.63 6.35-16.05 11.28-25.25 14.78-.58.22-.88.33-.9.34-.3.15-.73.3-1.31.46-.69.19-1.25.5-1.92.63-.71.14-1.26.29-1.65.44-.41.16-.87.27-1.39.34-.61.07-1.27.23-2 .47-.22.07-.44.13-.67.14-1.53.16-3.27.57-5.05.58-3.54.02-5.67.01-6.39-.01-1.04-.03-2.29-.34-3.46-.48-.7-.09-1.12-.16-1.25-.2-1.06-.35-1.87-.49-2.77-.85-2.46-.97-4.67-2.36-6.18-4.24-.27-.34-.65-1.02-1.13-2.02-.38-.78-.44-1.56-.65-2.66-.1-.54-.07-1.24.11-2.1.16-.79.2-1.49.47-2.17.76-1.87 1.68-3.52 3-5.01 1.85-2.09 4.01-4.16 6.33-5.64.02-.02.05-.02.08-.02.03-.01.04-.01.05-.01z"/>
+        </svg>
       </div>
-      <div class="login-title-wrap">
-        <h1>Tour de Contrôle</h1>
-        <p>SPV — Espace privé</p>
+      <div class="logo-text">
+        <span class="logo-spv">SPV</span>
+        <span class="logo-sub">Soc. Peinture Vendéenne</span>
       </div>
+    </a>
+    <ul class="nav-links">
+      <li><a href="#garanties">Engagements</a></li>
+      <li><a href="#services">Services</a></li>
+      <li><a href="#process">Méthode</a></li>
+      <li><a href="#zone">Zone</a></li>
+      <li><a href="#contact">Contact</a></li>
+    </ul>
+    <div class="nav-right">
+      <button class="theme-toggle" id="themeToggle" aria-label="Thème">
+        <div class="toggle-knob">
+          <svg class="t-icon" viewBox="0 0 24 24"><path id="toggleIcon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </div>
+      </button>
+      <a href="tel:0612243019" class="btn-nav-cta">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+        Appeler
+      </a>
     </div>
-    <div class="login-field">
-      <label>Email</label>
-      <input type="email" id="loginEmail" placeholder="admin@spv-peinture.fr" autocomplete="email"/>
-    </div>
-    <div class="login-field">
-      <label>Mot de passe</label>
-      <input type="password" id="loginPass" placeholder="••••••••" autocomplete="current-password"/>
-    </div>
-    <button class="login-btn" onclick="doLogin()" id="loginBtn">
-      <span id="loginBtnText">Connexion</span>
-    </button>
-    <div class="login-error" id="loginErr"></div>
+    <button class="hamburger" id="hamburger" style="background:none;border:none;color:var(--text-primary);cursor:pointer;padding:6px;line-height:0"><span></span><span></span><span></span></button>
   </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#garanties" onclick="closeMobile()">Engagements</a>
+  <a href="#services" onclick="closeMobile()">Services</a>
+  <a href="#process" onclick="closeMobile()">Notre méthode</a>
+  <a href="#zone" onclick="closeMobile()">Zone d'intervention</a>
+  <a href="#contact" onclick="closeMobile()">Contact & Devis</a>
+  <a href="tel:0612243019" class="btn-primary" style="margin-top:.5rem;justify-content:center">Appeler maintenant</a>
 </div>
 
-<!-- MAIN APP (hidden until logged in) -->
-<div id="dashApp">
+<!-- HERO -->
+<section id="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-radial"></div>
+  <div class="hero-content">
+    <div class="hero-left">
+      <div class="hero-badge"><div class="hero-badge-dot"></div><span class="t-label">Vendée — 85 — Intervention rapide</span></div>
+      <h1 class="hero-title">L'art de peindre,<span class="hero-title-accent">avec précision.</span></h1>
+      <p class="hero-subtitle">SPV transforme vos espaces avec soin, minutie et respect des délais. Peinture intérieure &amp; extérieure, ravalement, sols — partout en Vendée depuis plus de 20 ans.</p>
+      <div class="hero-ctas">
+        <a href="tel:0612243019" class="btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+          06 12 24 30 19
+        </a>
+        <a href="https://wa.me/33612243019" target="_blank" rel="noopener" class="btn-whatsapp">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+          WhatsApp
+        </a>
+        <a href="#" id="emailLink" class="btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          Envoyer un mail
+        </a>
+      </div>
 
-  <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sb-logo">
-      <div class="sb-logo-icon">
-        <svg viewBox="0 0 180 180" fill="#fff"><path d="M89.4 60.9L51.6 90.8c-.08.06-.16.07-.24.03-.08-.04-.12-.11-.12-.2V80.6c0-.04.02-.07.05-.1L89.2 50.5c.16-.12.32-.12.47 0L127.5 80.2c.14.11.19.25.19.43-.01 2.56-.01 4.74-.02 6.53-.01 1.03-.27 1.97-.81 2.82-.03.04-.06.04-.1.01L89.6 60.9c-.06-.04-.13-.04-.19 0z"/><path d="M98.57 108.28c-.04.03-.08.03-.11.02-.04-.01-.07-.04-.08-.08-.16-.34-.29-.59-.43-.78-.46-.65-1.28-1.86-2.47-3.64-.07-.1-.11-.21-.14-.32-.23-1.01-.25-2.6.44-3.53.4-.55.74-.93 1.02-1.14 1.89-1.4 2.92-2.13 4.44-3.55 1.95-1.85 3.58-3.69 4.84-6.09.25-.47.45-.96.6-1.46.27-.86.43-1.36.47-1.51.07-.24.08-.83.03-1.74-.01-.15-.04-.29-.1-.42-.04-.08-.18-.49-.42-1.22-.34-1.04-.98-1.95-1.72-2.7-.58-.6-1.27-.98-2.08-1.14-.65-.13-1.33.24-2.03.53-.17.07-.32.04-.43-.1-.89-1.07-1.73-2.12-2.51-3.16-.17-.23-.62-.45-.93-.63-.45-.28-.9-.32-1.37-.13-.38.15-.8.41-1.26.77-2.23 1.77-6.4 5.13-12.5 10.08-4.79 3.88-9.64 7.81-14.55 11.78-.97.78-1.5 1.31-1.59 1.58-.17.5-.21 1.02-.1 1.54.05.27.31.7.78 1.29 1.04 1.29 2.2 2.84 3.49 4.63.28.39.74 1.02 1.12 1.25 1.07.64 2.22.26 3.11-.49.97-.82 2.07-1.72 3.31-2.71 4.53-3.62 8.96-7.19 13.28-10.7.45-.37 1.02-.82 1.7-1.35.61-.47 1.18-.92 1.71-1.35 2.94-2.4 5.65-4.62 8.12-6.65.82-.67 1.04-1.5.68-2.48-.03-.07-.07-.14-.11-.2l-1.38-1.74c-.06-.07-.07-.15-.04-.24.04-.09.09-.14.18-.15.68-.12 1.63-.25 2.16.2.67.56 1.1 1.2 1.55 1.98.31.54.5 1.02.57 1.45.22 1.34.13 2.52-.27 3.54-.9 2.33-2.65 4.96-4.79 6.74-.32.27-.76.66-1.31 1.18-.94.89-2.33 1.77-3.23 2.48-.62.49-1.08.98-1.4 1.48-.21.34-.46.96-.73 1.86-.33 1.12 0 2.35.59 3.35.55.92 1.47 2.29 2.78 4.1.13.18.08.37-.18.56-.64.53-1.18.98-1.6 1.36-.04.03-.04.07 0 .11l1.73 2.19c.05.06.04.11-.07.17-2.08 1.15-4.18 2.17-6.31 3.06-.56.24-.92.46-1.41.6-.64.19-1.16.55-1.8.7-.49.11-.93.26-1.29.44-.5.25-.87.28-1.4.42-.09.03-.18.06-.27.1-.46.22-.95.38-1.45.49-.92.2-1.58.6-2.48.67-.47.04-1.07.18-1.8.42-.9.3-2.21.29-3.01.48-2.14.51-3.82.54-6.38.53-1.63-.01-2.66.02-4.04-.35-.89-.24-1.53-.39-1.91-.45l-.18-.05-1.71-.77c-.03-.01-.06-.03-.09-.05l-.88-.63c-.03-.02-.06-.05-.07-.08-.3-.42-.45-.87-.45-1.34-.01-12.9.01-23.21.02-30.92 0-.12.05-.22.14-.3l28.63-22.66c.06-.05.12-.05.18 0 3.46 2.67 5.19 4 5.2 4.01 1.7 1.32 3.14 2.45 4.31 3.39.05.04.31.24.79.6 3.09 2.37 8.92 6.9 17.47 13.58.46.36 1.16.91 1.26 1.56.03.22.04 1.55.03 4.01-.01.91-.37 1.24-1.04 1.97-.57.63-1.13 1.18-1.66 1.66-4.11 3.75-7.92 7.17-11.42 10.27-.22.19-.46.37-.7.55-.08.05-.09.12-.02.2l1.72 2.18c.05.06.04.12-.06.18l-3 2.17c-.14.1-.28.1-.4-.01-.76-.74-1.42-1.49-1.96-2.26-.04-.05-.09-.08-.15-.09-.06-.01-.11.01-.16.04z"/></svg>
-      </div>
-      <div>
-        <div class="sb-logo-text">SPV</div>
-        <div class="sb-logo-sub">Tour de Contrôle</div>
-      </div>
-    </div>
-    <nav class="sb-nav">
-      <div class="sb-section">Analytique</div>
-      <div class="sb-item active" onclick="showPage('overview',this)">
-        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
-        Vue d'ensemble
-      </div>
-      <div class="sb-item" onclick="showPage('visitors',this)">
-        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
-        Visiteurs
-      </div>
-      <div class="sb-item" onclick="showPage('conversion',this)">
-        <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-        Conversions
-      </div>
-      <div class="sb-item" onclick="showPage('scroll',this)">
-        <svg viewBox="0 0 24 24"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="17 7 12 2 7 7"/><polyline points="17 17 12 22 7 17"/></svg>
-        Scroll & Temps
-      </div>
-      <div class="sb-section">Campagnes</div>
-      <div class="sb-item" onclick="showPage('utm',this)">
-        <svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
-        Liens trackés
-      </div>
-      <div class="sb-item" onclick="showPage('sources',this)">
-        <svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
-        Sources
-      </div>
-      <div class="sb-section">Outils</div>
-      <div class="sb-item" onclick="exportCSV()">
-        <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-        Export CSV
-      </div>
-    </nav>
-    <div class="sb-bottom">
-      <div class="sb-user">
-        <div class="sb-avatar" id="sbAvatar">A</div>
-        <div class="sb-user-info">
-          <div class="sb-user-name" id="sbEmail">admin</div>
-          <div class="sb-user-role">Administrateur</div>
-        </div>
-        <div class="sb-logout" onclick="doLogout()" title="Déconnexion">
-          <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-        </div>
-      </div>
-    </div>
-  </aside>
-
-  <!-- MAIN -->
-  <div class="main">
-    <div class="topbar">
-      <div class="topbar-left">
-        <div>
-          <div class="page-title" id="topTitle">Vue d'ensemble</div>
-          <div class="page-sub" id="topSub">Chargement…</div>
-        </div>
-      </div>
-      <div class="topbar-right">
-        <div class="date-range">
-          <button class="date-btn" onclick="setRange(7,this)">7j</button>
-          <button class="date-btn active" onclick="setRange(30,this)">30j</button>
-          <button class="date-btn" onclick="setRange(90,this)">90j</button>
-        </div>
-        <div style="display:flex;align-items:center;gap:.4rem">
-          <div class="live-dot"></div>
-          <span class="live-label">LIVE</span>
-        </div>
-        <button class="btn-refresh" onclick="loadAll()">
-          <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
-          Actualiser
-        </button>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-number">20+</span><span class="stat-label">Ans d'expérience</span></div>
+        <div class="stat"><span class="stat-number">10 ans</span><span class="stat-label">Garantie décennale</span></div>
+        <div class="stat"><span class="stat-number">Dép. 85</span><span class="stat-label">Toute la Vendée</span></div>
       </div>
     </div>
 
-    <div class="content">
+    <div class="hero-visual">
+      <div class="hero-card-main">
+        <img src="https://images.unsplash.com/photo-1675671509845-a5184ef9c4c6?w=800&q=80" alt="Peintre SPV Vendée" loading="eager"/>
+        <div class="hero-card-overlay"></div>
+        <div class="hero-card-badge">Vendée — 85</div>
+      </div>
+      <div class="hero-float-card">
+        <div class="float-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <div class="float-text"><span class="float-t1">Devis sous 48h</span><span class="float-t2">Gratuit & sans engagement</span></div>
+      </div>
+      <div class="hero-float-card2">
+        <div class="float2-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+        <span class="float2-text">Garantie décennale</span>
+      </div>
+    </div>
+  </div>
+</section>
 
-      <!-- ── PAGE: OVERVIEW ── -->
-      <div class="page active" id="page-overview">
-        <div class="cards-grid" id="overviewCards">
-          <div class="stat-card sc-blue"><div class="stat-label"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Visiteurs</div><div class="stat-value" id="kpiVisitors">—</div><div class="stat-delta delta-neu" id="kpiVDelta">—</div><div class="stat-foot" id="kpiVFoot">période sélectionnée</div></div>
-          <div class="stat-card sc-green"><div class="stat-label"><svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>Formulaires</div><div class="stat-value" id="kpiForms">—</div><div class="stat-delta delta-neu" id="kpiFDelta">—</div><div class="stat-foot" id="kpiFoot">demandes de devis</div></div>
-          <div class="stat-card sc-gold"><div class="stat-label"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Taux conversion</div><div class="stat-value" id="kpiConv">—</div><div class="stat-delta delta-neu" id="kpiCDelta">—</div><div class="stat-foot">visiteurs → devis</div></div>
-          <div class="stat-card sc-orange"><div class="stat-label"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Temps moyen</div><div class="stat-value" id="kpiTime">—</div><div class="stat-delta delta-neu" id="kpiTDelta">—</div><div class="stat-foot">sur le site</div></div>
+<!-- GARANTIES -->
+<section id="garanties">
+  <div class="container">
+    <div class="section-header center reveal">
+      <span class="t-label">Nos engagements</span>
+      <h2 class="t-h2">Ce qui nous distingue</h2>
+      <p class="t-body" style="max-width:460px">Chaque chantier est traité avec la même exigence : propreté, précision, communication.</p>
+    </div>
+    <div class="guarantee-grid">
+      <div class="guarantee-card reveal reveal-delay-1"><div class="guarantee-num">01</div><div class="guarantee-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg></div><h3 class="t-h3">Devis clair & détaillé</h3><p class="t-body">Un devis transparent, sans surprise. Chaque poste expliqué avant de signer.</p></div>
+      <div class="guarantee-card reveal reveal-delay-2"><div class="guarantee-num">02</div><div class="guarantee-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div><h3 class="t-h3">Délais respectés</h3><p class="t-body">Le planning est tenu. Vous êtes informé à chaque étape, sans attente inutile.</p></div>
+      <div class="guarantee-card reveal reveal-delay-3"><div class="guarantee-num">03</div><div class="guarantee-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div><h3 class="t-h3">Chantier propre</h3><p class="t-body">Protection systématique du mobilier et des sols. Nettoyage complet en fin d'intervention.</p></div>
+      <div class="guarantee-card reveal reveal-delay-1"><div class="guarantee-num">04</div><div class="guarantee-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></div><h3 class="t-h3">Finitions soignées</h3><p class="t-body">Angles, joints, raccords — chaque détail est travaillé avec soin et professionnalisme.</p></div>
+      <div class="guarantee-card reveal reveal-delay-2"><div class="guarantee-num">05</div><div class="guarantee-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div><h3 class="t-h3">Toute la Vendée</h3><p class="t-body">Basé en Vendée, nous intervenons dans tout le département 85 sans frais excessifs.</p></div>
+      <div class="guarantee-card reveal reveal-delay-3"><div class="guarantee-num">06</div><div class="guarantee-icon"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3 class="t-h3">Garantie décennale</h3><p class="t-body">Nos travaux sont couverts par l'assurance décennale obligatoire. Votre investissement protégé 10 ans.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- SERVICES -->
+<section id="services">
+  <div class="container">
+    <div class="section-header reveal">
+      <span class="t-label">Nos prestations</span>
+      <h2 class="t-h2">Un seul interlocuteur,<br>toutes vos rénovations.</h2>
+    </div>
+    <div class="services-grid">
+      <div class="service-card reveal reveal-delay-1">
+        <div class="service-icon-wrap"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><path d="M9 22V12h6v10"/></svg></div>
+        <h3 class="t-h3">Peinture intérieure</h3>
+        <p class="service-desc">Murs, plafonds, boiseries, volets — préparation des supports, application soignée, résultat impeccable.</p>
+        <button class="btn-link" onclick="selectService('Peinture intérieure')">Demander un devis<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      </div>
+      <div class="service-card reveal reveal-delay-2">
+        <div class="service-icon-wrap"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg></div>
+        <h3 class="t-h3">Peinture extérieure</h3>
+        <p class="service-desc">Protection et esthétique de vos façades, volets et clôtures. Peintures adaptées au climat vendéen.</p>
+        <button class="btn-link" onclick="selectService('Peinture extérieure')">Demander un devis<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      </div>
+      <div class="service-card reveal reveal-delay-3">
+        <div class="service-icon-wrap"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg></div>
+        <h3 class="t-h3">Ravalement de façade</h3>
+        <p class="service-desc">Nettoyage, rebouchage, traitement des fissures, enduit ou peinture. Redonnez vie à votre bâtiment.</p>
+        <button class="btn-link" onclick="selectService('Ravalement de façade')">Demander un devis<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      </div>
+    </div>
+    <div class="services-row-2">
+      <div class="service-card reveal reveal-delay-1">
+        <div class="service-icon-wrap"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg></div>
+        <h3 class="t-h3">Revêtements muraux</h3>
+        <p class="service-desc">Papier peint, toile de verre, tissu mural — préparation des fonds, pose précise, raccords invisibles.</p>
+        <button class="btn-link" onclick="selectService('Revêtements muraux')">Demander un devis<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      </div>
+      <div class="service-card reveal reveal-delay-2">
+        <div class="service-icon-wrap"><svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="1"/><path d="M3 9h18M9 21V9"/></svg></div>
+        <h3 class="t-h3">Pose de sols</h3>
+        <p class="service-desc">Parquet, stratifié, PVC, carrelage — de la préparation du support à la finition, chaque détail est soigné.</p>
+        <button class="btn-link" onclick="selectService('Pose de sols')">Demander un devis<svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PROCESS - Aceternity Timeline Style -->
+<section id="process">
+  <div class="container">
+    <div class="section-header center reveal" style="margin-bottom:0;padding-bottom:3rem">
+      <span class="t-label">Notre méthode</span>
+      <h2 class="t-h2">De la prise de contact à la garantie.</h2>
+      <p class="t-body" style="max-width:520px">Un process fluide, transparent et sans friction — du premier appel jusqu'à 10 ans après.</p>
+    </div>
+  </div>
+
+  <div class="tl-wrapper" id="tlWrapper">
+    <div class="tl-track" id="tlTrack">
+      <div class="tl-fill" id="tlFill"></div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-dot"><span>01</span></div>
+        <h3 class="tl-step-title">Appel ou<br>message</h3>
+      </div>
+      <div class="tl-right">
+        <div class="tl-card">
+          <p class="tl-desc">Décrivez votre projet en quelques mots. Par téléphone, WhatsApp ou email — on s'adapte à vos habitudes. Pas de formulaire complexe, pas de rendez-vous préalable.</p>
+          <span class="step-tag">Réponse sous 24h</span>
         </div>
-        <div class="charts-row">
-          <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Trafic quotidien</div><div class="chart-sub">Visites par jour sur la période</div></div></div>
-            <div class="chart-wrap"><canvas id="trafficChart" height="200"></canvas></div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Appareils</div><div class="chart-sub">Répartition</div></div></div>
-            <div class="chart-wrap"><canvas id="deviceChart" height="200"></canvas></div>
-          </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-dot"><span>02</span></div>
+        <h3 class="tl-step-title">Visite &amp;<br>estimation</h3>
+      </div>
+      <div class="tl-right">
+        <div class="tl-card">
+          <p class="tl-desc">Déplacement sur place pour évaluer les surfaces, discuter de vos attentes et choisir les matériaux ensemble. Un échange humain, sans pression commerciale.</p>
+          <span class="step-tag">Gratuit</span>
         </div>
-        <div class="section-row">
-          <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Nouvelles vs. retours</div><div class="chart-sub">Fidélité des visiteurs</div></div></div>
-            <div class="chart-wrap"><canvas id="newReturnChart" height="180"></canvas></div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Top navigateurs</div><div class="chart-sub">Part de marché</div></div></div>
-            <div id="browserList" style="padding:.5rem 0"></div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-dot"><span>03</span></div>
+        <h3 class="tl-step-title">Devis<br>détaillé</h3>
+      </div>
+      <div class="tl-right">
+        <div class="tl-card">
+          <p class="tl-desc">Vous recevez un devis clair, poste par poste, sous 48h. Sans pression, sans relance abusive. Chaque ligne est expliquée pour que vous compreniez exactement ce que vous payez.</p>
+          <span class="step-tag">Sous 48h</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-dot"><span>04</span></div>
+        <h3 class="tl-step-title">Réalisation<br>du chantier</h3>
+      </div>
+      <div class="tl-right">
+        <div class="tl-card">
+          <p class="tl-desc">Mise en œuvre dans le respect du planning. Vous êtes informé régulièrement de l'avancement des travaux. Protection systématique du mobilier et des sols en cours de chantier.</p>
+          <span class="step-tag">Suivi régulier</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-dot"><span>05</span></div>
+        <h3 class="tl-step-title">Réception &amp;<br>finitions</h3>
+      </div>
+      <div class="tl-right">
+        <div class="tl-card">
+          <p class="tl-desc">Visite finale avec vous, vérification ensemble, retouches si nécessaire. Le chantier vous est rendu propre et en ordre. Votre satisfaction est notre dernier pointage avant la remise des clés.</p>
+          <span class="step-tag">Satisfaction garantie</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-item">
+      <div class="tl-left">
+        <div class="tl-dot tl-dot-gold"><span>06</span></div>
+        <h3 class="tl-step-title" style="color:#c9a327">Garantie<br>décennale</h3>
+      </div>
+      <div class="tl-right">
+        <div class="tl-card tl-card-gold">
+          <p class="tl-desc">Après réception, vos travaux sont couverts par notre assurance décennale obligatoire. En cas de problème lié à notre intervention dans les 10 ans, vous êtes protégé. C'est notre engagement à long terme.</p>
+          <span class="step-tag gold">10 ans de couverture</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="tl-cta-row">
+      <div class="process-cta-block">
+        <div class="process-cta-text"><h3>Prêt à lancer votre projet ?</h3><p>Un appel de 5 minutes suffit pour commencer.</p></div>
+        <a href="tel:0612243019" class="btn-white"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>Appeler maintenant</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ZONE (WITH YOUR NEW THREE.JS MAP) -->
+<section id="zone">
+  <div class="container">
+    <div class="zone-layout">
+      <div class="zone-map-visual reveal" id="zoneMapCard">
+        <div class="zone-tip" id="zoneTip"></div>
+        <div class="zone-dept-number">85</div>
+        <div class="zone-map-badge"><div class="zone-map-badge-dot"></div>Zone d'intervention</div>
+      </div>
+
+      <div class="zone-right">
+        <div class="section-header reveal">
+          <span class="t-label">Déplacement</span>
+          <h2 class="t-h2">Toute la Vendée,<br>sans exception.</h2>
+          <p class="t-body">Du bocage vendéen aux côtes atlantiques. Survolez la carte pour explorer nos zones d'intervention.</p>
+        </div>
+
+        <div class="cities-grid reveal">
+          <span class="city-tag">La Roche-sur-Yon</span><span class="city-tag">Les Sables-d'Olonne</span><span class="city-tag">Challans</span><span class="city-tag">Fontenay-le-Comte</span><span class="city-tag">Luçon</span><span class="city-tag">Saint-Jean-de-Monts</span><span class="city-tag">La Châtaigneraie</span><span class="city-tag">Montaigu-Vendée</span><span class="city-tag">Saint-Gilles-Croix-de-Vie</span><span class="city-tag">Noirmoutier</span><span class="city-tag">L'Île-d'Yeu</span><span class="city-tag">Chantonnay</span><span class="city-tag">Les Herbiers</span><span class="city-tag">La Tranche-sur-Mer</span>
+        </div>
+
+        <div class="zone-note reveal">
+          <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <p><strong>Hors département ?</strong> Contactez-nous, nous étudions chaque demande selon la distance et la nature du chantier.</p>
+        </div>
+
+        <a href="tel:0612243019" class="btn-primary reveal" style="width:fit-content">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+          Vérifier ma zone
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CONTACT -->
+<section id="contact">
+  <div class="container">
+    <div class="section-header center reveal"><span class="t-label">Contact</span><h2 class="t-h2">Démarrons votre projet</h2><p class="t-body" style="max-width:440px">Choisissez le canal qui vous convient. Nous répondons vite et sans jargon.</p></div>
+
+    <div class="contact-layout">
+      <div class="contact-left reveal">
+        <div class="contact-items">
+          <a href="tel:0612243019" class="contact-item">
+            <div class="c-icon"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg></div>
+            <div class="c-text"><span class="c-label">Téléphone</span><span class="c-value">06 12 24 30 19</span></div>
+            <svg class="c-arrow" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+
+          <a href="#" id="emailLink" class="contact-item">
+            <div class="c-icon"><svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></div>
+            <div class="c-text"><span class="c-label">Email</span><span class="c-value" id="emailDisplay">—</span></div>
+            <svg class="c-arrow" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+
+          <a href="https://wa.me/33612243019" target="_blank" rel="noopener" class="contact-item">
+            <div class="c-icon wa"><svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg></div>
+            <div class="c-text"><span class="c-label">WhatsApp</span><span class="c-value">Écrire un message</span></div>
+            <svg class="c-arrow" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </a>
+        </div>
+
+        <div style="padding:1.5rem;background:var(--bg-card);border:1px solid var(--border);border-radius:8px">
+          <p class="t-label" style="margin-bottom:.8rem">Horaires</p>
+          <div style="display:flex;flex-direction:column;gap:.5rem">
+            <div style="display:flex;justify-content:space-between"><span style="font-size:.85rem;color:var(--text-secondary)">Lundi – Vendredi</span><span style="font-size:.85rem;font-weight:600">8h – 18h</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="font-size:.85rem;color:var(--text-secondary)">Samedi</span><span style="font-size:.85rem;font-weight:600">8h – 12h</span></div>
+            <div style="display:flex;justify-content:space-between"><span style="font-size:.85rem;color:var(--text-muted)">Dimanche</span><span style="font-size:.85rem;color:var(--text-muted)">Fermé</span></div>
           </div>
         </div>
       </div>
 
-      <!-- ── PAGE: VISITORS ── -->
-      <div class="page" id="page-visitors">
-        <div class="chart-card full-row">
-          <div class="chart-header"><div><div class="chart-title">Heures de pointe</div><div class="chart-sub">Nombre de visites par heure (0h–23h)</div></div></div>
-          <div class="heatmap-grid" id="heatmapGrid"></div>
-          <div class="hm-labels" id="heatmapLabels"></div>
+      <div class="contact-right reveal reveal-delay-2">
+        <h3 class="form-title">Demander un devis</h3>
+        <p class="t-body" style="font-size:.82rem">Votre message sera envoyé directement par email.</p>
+        <div class="form-row">
+          <div class="form-group" id="grp-prenom"><label>Prénom</label><input type="text" id="f-prenom" placeholder="Jean" autocomplete="given-name"/><span class="err-msg">Champ obligatoire</span></div>
+          <div class="form-group" id="grp-nom"><label>Nom</label><input type="text" id="f-nom" placeholder="Dupont" autocomplete="family-name"/><span class="err-msg">Champ obligatoire</span></div>
         </div>
-        <div class="table-card">
-          <div class="table-header"><h3>Derniers visiteurs</h3><span style="font-size:.7rem;color:var(--txt3)" id="visitorCount"></span></div>
-          <table><thead><tr><th>Date</th><th>Appareil</th><th>Navigateur</th><th>Source</th><th>Nouveau</th><th>Formulaire</th><th>Scroll</th></tr></thead>
-          <tbody id="visitorTable"></tbody></table>
+        <div class="form-group" id="grp-tel"><label>Téléphone</label><input type="tel" id="f-tel" placeholder="06 XX XX XX XX" autocomplete="tel"/><span class="err-msg">Numéro invalide</span></div>
+        <div class="form-group" id="grp-service">
+          <label>Type de prestation</label>
+          <select id="f-service">
+            <option value="">Choisir un service...</option>
+            <option value="Peinture intérieure">Peinture intérieure</option>
+            <option value="Peinture extérieure">Peinture extérieure</option>
+            <option value="Ravalement de façade">Ravalement de façade</option>
+            <option value="Revêtements muraux">Revêtements muraux</option>
+            <option value="Pose de sols">Pose de sols</option>
+            <option value="Plusieurs prestations">Plusieurs prestations</option>
+          </select>
+          <span class="err-msg">Veuillez choisir un service</span>
+        </div>
+        <div class="form-group" id="grp-message"><label>Message</label><textarea id="f-message" placeholder="Décrivez votre projet : surface, localisation, délai souhaité..."></textarea><span class="err-msg">Champ obligatoire</span></div>
+        <div class="slide-btn-wrap" id="slideWrap">
+          <div class="slide-btn-fill" id="slideFill"></div>
+          <div class="slide-btn-handle" id="slideHandle">
+            <!-- arrow right icon -->
+            <svg viewBox="0 0 24 24" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </div>
+          <div class="slide-btn-label" id="slideLabel">
+            <span class="slide-arrows">›› </span>Glissez pour envoyer
+          </div>
+          <div class="slide-btn-status" id="slideStatus"></div>
         </div>
       </div>
+    </div>
+  </div>
+</section>
 
-      <!-- ── PAGE: CONVERSION ── -->
-      <div class="page" id="page-conversion">
-        <div class="conv-row">
-          <div class="stat-card sc-green"><div class="stat-label">Formulaires envoyés</div><div class="stat-value" id="convForms">—</div><div class="stat-foot">sur la période</div></div>
-          <div class="stat-card sc-blue"><div class="stat-label">Visiteurs uniques</div><div class="stat-value" id="convVisitors">—</div><div class="stat-foot">sessions distinctes</div></div>
-          <div class="stat-card sc-gold"><div class="stat-label">Taux de conversion</div><div class="stat-value" id="convRate">—</div><div class="stat-foot">visiteurs → devis</div></div>
+<!-- FOOTER -->
+<footer>
+  <div class="container">
+    <div class="footer-grid">
+      <div class="footer-brand">
+        <div style="display:flex;align-items:center;gap:.7rem">
+          <div class="logo-icon-wrap"><svg viewBox="0 0 180 180" xmlns="http://www.w3.org/2000/svg" fill="currentColor"><path d="M89.4 60.9L51.6 90.8c-.08.06-.16.07-.24.03-.08-.04-.12-.11-.12-.2V80.6c0-.04.02-.07.05-.1L89.2 50.5c.16-.12.32-.12.47 0L127.5 80.2c.14.11.19.25.19.43-.01 2.56-.01 4.74-.02 6.53-.01 1.03-.27 1.97-.81 2.82-.03.04-.06.04-.1.01L89.6 60.9c-.06-.04-.13-.04-.19 0z"/><path d="M98.57 108.28c-.04.03-.08.03-.11.02-.04-.01-.07-.04-.08-.08-.16-.34-.29-.59-.43-.78-.46-.65-1.28-1.86-2.47-3.64-.07-.1-.11-.21-.14-.32-.23-1.01-.25-2.6.44-3.53.4-.55.74-.93 1.02-1.14 1.89-1.4 2.92-2.13 4.44-3.55 1.95-1.85 3.58-3.69 4.84-6.09.25-.47.45-.96.6-1.46.27-.86.43-1.36.47-1.51.07-.24.08-.83.03-1.74-.01-.15-.04-.29-.1-.42-.04-.08-.18-.49-.42-1.22-.34-1.04-.98-1.95-1.72-2.7-.58-.6-1.27-.98-2.08-1.14-.65-.13-1.33.24-2.03.53-.17.07-.32.04-.43-.1-.89-1.07-1.73-2.12-2.51-3.16-.17-.23-.62-.45-.93-.63-.45-.28-.9-.32-1.37-.13-.38.15-.8.41-1.26.77-2.23 1.77-6.4 5.13-12.5 10.08-4.79 3.88-9.64 7.81-14.55 11.78-.97.78-1.5 1.31-1.59 1.58-.17.5-.21 1.02-.1 1.54.05.27.31.7.78 1.29 1.04 1.29 2.2 2.84 3.49 4.63.28.39.74 1.02 1.12 1.25 1.07.64 2.22.26 3.11-.49.97-.82 2.07-1.72 3.31-2.71 4.53-3.62 8.96-7.19 13.28-10.7.45-.37 1.02-.82 1.7-1.35.61-.47 1.18-.92 1.71-1.35 2.94-2.4 5.65-4.62 8.12-6.65.82-.67 1.04-1.5.68-2.48-.03-.07-.07-.14-.11-.2l-1.38-1.74c-.06-.07-.07-.15-.04-.24.04-.09.09-.14.18-.15.68-.12 1.63-.25 2.16.2.67.56 1.1 1.2 1.55 1.98.31.54.5 1.02.57 1.45.22 1.34.13 2.52-.27 3.54-.9 2.33-2.65 4.96-4.79 6.74-.32.27-.76.66-1.31 1.18-.94.89-2.33 1.77-3.23 2.48-.62.49-1.08.98-1.4 1.48-.21.34-.46.96-.73 1.86-.33 1.12 0 2.35.59 3.35.55.92 1.47 2.29 2.78 4.1.13.18.08.37-.18.56-.64.53-1.18.98-1.6 1.36-.04.03-.04.07 0 .11l1.73 2.19c.05.06.04.11-.07.17-2.08 1.15-4.18 2.17-6.31 3.06-.56.24-.92.46-1.41.6-.64.19-1.16.55-1.8.7-.49.11-.93.26-1.29.44-.5.25-.87.28-1.4.42l-.27.1c-.46.22-.95.38-1.45.49-.92.2-1.58.6-2.48.67-.47.04-1.07.18-1.8.42-.9.3-2.21.29-3.01.48-2.14.51-3.82.54-6.38.53-1.63-.01-2.66.02-4.04-.35-.89-.24-1.53-.39-1.91-.45l-.18-.05-1.71-.77-.09-.05-.88-.63c-.03-.02-.06-.05-.07-.08-.3-.42-.45-.87-.45-1.34-.01-12.9.01-23.21.02-30.92 0-.12.05-.22.14-.3l28.63-22.66c.06-.05.12-.05.18 0 3.46 2.67 5.19 4 5.2 4.01 1.7 1.32 3.14 2.45 4.31 3.39l.79.6c3.09 2.37 8.92 6.9 17.47 13.58.46.36 1.16.91 1.26 1.56.03.22.04 1.55.03 4.01-.01.91-.37 1.24-1.04 1.97-.57.63-1.13 1.18-1.66 1.66-4.11 3.75-7.92 7.17-11.42 10.27-.22.19-.46.37-.7.55-.08.05-.09.12-.02.2l1.72 2.18c.05.06.04.12-.06.18l-3 2.17c-.14.1-.28.1-.4-.01-.76-.74-1.42-1.49-1.96-2.26-.04-.05-.09-.08-.15-.09-.06-.01-.11.01-.16.04z"/><path d="M120.33 91.66c.14.18.23.33.41.43.45.24.95.47 1.51.71.12.05.26.09.39.09 1.11.06 1.87.05 2.26-.03.44-.09 1.03-.37 1.77-.84.41-.26.93-.76 1.57-1.49 3.19-3.61 6.25-7.1 9.18-10.44.69-.79 1.18-1.28 1.48-1.48.5-.35 1.14-.62 1.91-.83.53-.14 1.16-.1 1.88.12.67.2 1.2.54 1.58 1.01.68.82.97 1.82.87 3-.04.5-.14.9-.29 1.18-.46.86-.96 1.56-1.49 2.09-.21.21-.87.76-1.98 1.66-3.15 2.55-6.13 4.95-8.95 7.19-.73.59-1.46 1.36-1.93 1.85-.07.07-.29.39-.66.95l-.07.19-.5 1.95c-.01.06-.01.12 0 .18l.45 2.21c.03.15.08.29.18.41.32.45.54.88.66 1.3.02.06.02.12.01.18-.08.3-.16.49-.25.57-.64.58-1.18 1.13-1.63 1.64-.05.05-.1.05-.15 0L117.81 94.13c-.1-.11-.1-.21.02-.31l2.41-2.16c.03-.02.06-.02.09.01zm22.2-11.19c-.16-.16-.36-.28-.59-.35-.23-.07-.47-.09-.73-.05-.26.03-.52.11-.78.24-.26.13-.49.3-.7.51-.21.21-.38.44-.51.7-.13.25-.22.51-.26.77-.03.26-.02.51.04.74.06.23.17.43.33.6.16.16.36.28.59.35.23.07.47.09.73.06.26-.03.52-.11.78-.24.26-.13.49-.3.7-.51.21-.21.38-.44.52-.7.14-.25.22-.52.26-.78.04-.26.03-.51-.04-.73-.07-.23-.18-.43-.33-.6z"/><path d="M113.09 98.51l3.89-3.68c.05-.05.11-.07.18-.07.07.01.13.03.17.08l10.22 11.43c.1.11.1.22-.01.33l-3.48 3.48c-.05.05-.11.07-.18.07-.07 0-.13-.02-.17-.07l-10.62-11.23c-.11-.12-.1-.24.01-.33z"/><path d="M57.21 105.21c.02 0 .04.01.06.02.01.02.01.05 0 .07l-.5.82c-.06.1-.11.22-.15.33l-1.37 3.77-.03.14c-.1.77-.12 1.37-.26 2.03-.19.89-.19 2.1 0 3.07.1.45.17.89.21 1.34.02.15.06.29.13.43.45 1 .71 1.55.77 1.65.96 1.67 2.31 2.87 4.05 3.61.6.25.99.42 1.17.5.13.06.27.1.41.12.87.16 1.62.33 2.27.5.62.16 1.21.24 1.77.26 2.15.05 4.17.05 6.06-.01 1.73-.06 3.73-.67 5.24-.73l.09-.01 5.89-1.52c.49-.22 1.04-.4 1.62-.55.69-.18 1.21-.43 1.76-.6.69-.22 1.1-.36 1.24-.44.51-.28 1.06-.41 1.63-.65 4.04-1.69 7.95-3.71 11.73-6.06.68-.42 1.35-.84 2.02-1.26 1.25-.78 2.5-1.65 3.77-2.61.14-.11.27-.1.4.02.57.56.75.75 1.4 1.24.32.24.65.6 1.01 1.06.04.05.04.1 0 .16-.2.25-.37.44-.52.56-7.63 6.35-16.05 11.28-25.25 14.78l-.9.34c-.3.15-.73.3-1.31.46-.69.19-1.25.5-1.92.63-.71.14-1.26.29-1.65.44-.41.16-.87.27-1.39.34-.61.07-1.27.23-2 .47-.22.07-.44.13-.67.14-1.53.16-3.27.57-5.05.58-3.54.02-5.67.01-6.39-.01-1.04-.03-2.29-.34-3.46-.48-.7-.09-1.12-.16-1.25-.2-1.06-.35-1.87-.49-2.77-.85-2.46-.97-4.67-2.36-6.18-4.24-.27-.34-.65-1.02-1.13-2.02-.38-.78-.44-1.56-.65-2.66-.1-.54-.07-1.24.11-2.1.16-.79.2-1.49.47-2.17.76-1.87 1.68-3.52 3-5.01 1.85-2.09 4.01-4.16 6.33-5.64.02-.02.05-.02.08-.02l.05-.01z"/></svg></div>
+          <div class="logo-text"><span class="logo-spv" style="color:#fff">SPV</span><span class="logo-sub">Soc. Peinture Vendéenne</span></div>
         </div>
-        <div class="charts-row">
-          <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Conversions dans le temps</div><div class="chart-sub">Formulaires par jour</div></div></div>
-            <canvas id="convChart" height="200"></canvas>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Funnel</div><div class="chart-sub">Du visiteur au devis</div></div></div>
-            <div id="funnelView" style="padding:1rem 0"></div>
-          </div>
-        </div>
-        <div class="table-card">
-          <div class="table-header"><h3>Formulaires reçus</h3></div>
-          <table><thead><tr><th>Date</th><th>Source</th><th>Appareil</th><th>Nouveau visiteur</th></tr></thead>
-          <tbody id="formTable"></tbody></table>
-        </div>
+        <p>Artisan peintre en Vendée depuis plus de 20 ans. Peinture, ravalement, revêtements, sols. Garantie décennale.</p>
+        <a href="tel:0612243019" style="display:inline-flex;align-items:center;gap:.4rem;padding:.5rem 1rem;background:#1f3a8a;color:#fff;font-size:.8rem;font-weight:600;border-radius:4px;width:fit-content">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>Appeler maintenant
+        </a>
       </div>
+      <div class="footer-col"><h4>Navigation</h4><ul><li><a href="#garanties">Nos engagements</a></li><li><a href="#services">Services</a></li><li><a href="#process">Notre méthode</a></li><li><a href="#zone">Zone d'intervention</a></li><li><a href="#contact">Contact & Devis</a></li></ul></div>
+      <div class="footer-col"><h4>Contact direct</h4><ul><li><a href="tel:0612243019">06 12 24 30 19</a></li><li><a href="#" id="emailLinkFooterCol" class="footer-email-item"></a></li><li><a href="https://wa.me/33612243019" target="_blank">WhatsApp</a></li><li style="color:rgba(255,255,255,.3);font-size:.85rem">Vendée (85)</li></ul></div>
+    </div>
+    <div class="footer-bottom">
+      <p>© 2026 SPV – Société de Peinture Vendéenne. Tous droits réservés.</p>
+      <a href="#" id="cookieRevoke" style="font-size:.72rem;color:rgba(255,255,255,.25);text-decoration:underline;text-underline-offset:3px">Gérer les cookies</a>
+    </div>
+  </div>
+</footer>
 
-      <!-- ── PAGE: SCROLL ── -->
-      <div class="page" id="page-scroll">
-        <div class="section-row">
-          <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Profondeur de scroll</div><div class="chart-sub">% de visiteurs ayant atteint chaque zone</div></div></div>
-            <div class="depth-bars" id="depthBars"></div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Temps sur le site</div><div class="chart-sub">Distribution des durées de session</div></div></div>
-            <canvas id="timeChart" height="220"></canvas>
-          </div>
-        </div>
-        <div class="chart-card full-row">
-          <div class="chart-header"><div><div class="chart-title">Scroll moyen par source</div><div class="chart-sub">Quel canal amène les visiteurs les plus engagés</div></div></div>
-          <canvas id="scrollSourceChart" height="160"></canvas>
-        </div>
-      </div>
+<!-- FAB -->
+<div class="fab">
+  <a href="https://wa.me/33612243019" target="_blank" rel="noopener" class="fab-btn" style="background:#25D366">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+  </a>
+  <a href="tel:0612243019" class="fab-btn fab-phone">
+    <svg viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07A19.5 19.5 0 013.07 10.8a19.79 19.79 0 01-3.07-8.67A2 2 0 012 .18h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L6.09 7.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 14.92z"/></svg>
+  </a>
+</div>
 
-      <!-- ── PAGE: UTM LINKS ── -->
-      <div class="page" id="page-utm">
-        <div class="utm-section">
-          <div class="utm-builder">
-            <div class="utm-title">Générer un lien tracké</div>
-            <div class="input-group"><label>Nom du lien (interne)</label><input type="text" id="utmName" placeholder="ex: Flyer Salon Habitat Nantes"/></div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.8rem">
-              <div class="input-group"><label>Source</label>
-                <select id="utmSource">
-                  <option value="facebook">Facebook</option>
-                  <option value="instagram">Instagram</option>
-                  <option value="google">Google</option>
-                  <option value="flyer">Flyer papier</option>
-                  <option value="email">Email</option>
-                  <option value="whatsapp">WhatsApp</option>
-                  <option value="leboncoin">Leboncoin</option>
-                  <option value="autre">Autre</option>
-                </select>
-              </div>
-              <div class="input-group"><label>Support</label>
-                <select id="utmMedium">
-                  <option value="social">Réseaux sociaux</option>
-                  <option value="print">Impression</option>
-                  <option value="email">Email</option>
-                  <option value="cpc">Publicité payante</option>
-                  <option value="organic">Organique</option>
-                  <option value="referral">Référence</option>
-                </select>
-              </div>
-            </div>
-            <div class="input-group"><label>Campagne</label><input type="text" id="utmCampaign" placeholder="ex: promo-printemps-2025"/></div>
-            <div class="input-group"><label>URL du site</label><input type="text" id="utmBaseUrl" value="https://spv-peinture.fr"/></div>
-            <div class="utm-preview" id="utmPreview">https://spv-peinture.fr</div>
-            <div class="utm-actions">
-              <button class="btn-primary" onclick="saveUtmLink()">
-                <svg viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                Sauvegarder
-              </button>
-              <button class="btn-sec" onclick="copyUtmLink()">
-                <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
-                Copier
-              </button>
-            </div>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Performance par source UTM</div><div class="chart-sub">Visites générées</div></div></div>
-            <canvas id="utmChart" height="240"></canvas>
-          </div>
-        </div>
-        <div class="table-card">
-          <div class="table-header"><h3>Liens générés</h3><span style="font-size:.7rem;color:var(--txt3)" id="utmLinkCount"></span></div>
-          <table><thead><tr><th>Nom</th><th>Source</th><th>Campagne</th><th>Visites</th><th>Conversions</th><th>Créé le</th><th>Actions</th></tr></thead>
-          <tbody id="utmTable"></tbody></table>
-        </div>
-      </div>
-
-      <!-- ── PAGE: SOURCES ── -->
-      <div class="page" id="page-sources">
-        <div class="charts-row">
-          <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Sources de trafic</div><div class="chart-sub">Origine des visiteurs</div></div></div>
-            <canvas id="sourcePieChart" height="240"></canvas>
-          </div>
-          <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Trafic par source</div><div class="chart-sub">Évolution dans le temps</div></div></div>
-            <canvas id="sourceLineChart" height="240"></canvas>
-          </div>
-        </div>
-        <div class="table-card">
-          <div class="table-header"><h3>Détail par source</h3></div>
-          <table><thead><tr><th>Source</th><th>Type</th><th>Visites</th><th>Part</th><th>Conversions</th><th>Scroll moyen</th></tr></thead>
-          <tbody id="sourceTable"></tbody></table>
-        </div>
-      </div>
-
-    </div><!-- /content -->
-  </div><!-- /main -->
-</div><!-- /dashApp -->
-
-<div class="tooltip-copy" id="copyToast">✓ Lien copié !</div>
-
+<!-- GLOBAL SITE SCRIPT (theme, nav, reveal, contact form, etc.) -->
 <script>
-// ══════════════════════════════════════════════════════
-// CONFIG — remplace avec tes clés Supabase
-// ══════════════════════════════════════════════════════
-const SUPABASE_URL  = "https://togigjvqmtojnwnyipej.supabase.co";
-const SUPABASE_KEY  = "sb_publishable_97IFltYBm28jnNBqnaORxQ_1Ox8txSI";
+  // NAV scrolled
+  const nav = document.getElementById('main-nav');
+  const onScroll = () => {
+    if (window.scrollY > 10) nav.classList.add('scrolled');
+    else nav.classList.remove('scrolled');
+  };
+  window.addEventListener('scroll', onScroll); onScroll();
 
-let sb, currentRange = 30;
-let charts = {};
+  // Mobile menu
+  const hamburger = document.getElementById('hamburger');
+  const mobileMenu = document.getElementById('mobileMenu');
+  hamburger.addEventListener('click', () => mobileMenu.classList.toggle('open'));
+  window.closeMobile = () => mobileMenu.classList.remove('open');
 
-// ── Init ──────────────────────────────────────────────
-window.addEventListener("DOMContentLoaded", () => {
-  sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: false
+  // Theme toggle
+  const html = document.documentElement;
+  const tt = document.getElementById('themeToggle');
+  const toggleIcon = document.getElementById('toggleIcon');
+  const sunPath = "M12 2v2m0 16v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2m16 0h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41M12 8a4 4 0 100 8 4 4 0 000-8z";
+  const moonPath = "M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z";
+  const setTheme = (t) => {
+    html.setAttribute('data-theme', t);
+    localStorage.setItem('spv_theme', t);
+    toggleIcon.setAttribute('d', t === 'dark' ? moonPath : sunPath);
+  };
+  setTheme(localStorage.getItem('spv_theme') || 'dark');
+  tt.addEventListener('click', () => setTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'));
+
+
+
+  // ── SMOOTH SCROLL WITH EASING ─────────────────────────────
+  (function(){
+    function easeInOutQuart(t){ return t<.5 ? 8*t*t*t*t : 1-8*(--t)*t*t*t; }
+
+    window.smoothScrollTo = function(targetY, duration){
+      duration = duration || 700;
+      const startY = window.scrollY;
+      const diff   = targetY - startY;
+      if(Math.abs(diff) < 2) return;
+      let startTime = null;
+
+      function step(now){
+        if(!startTime) startTime = now;
+        const elapsed  = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        window.scrollTo(0, startY + diff * easeInOutQuart(progress));
+        if(progress < 1) requestAnimationFrame(step);
+      }
+      requestAnimationFrame(step);
+    };
+
+    // Intercept all anchor clicks
+    document.addEventListener("click", function(e){
+      const a = e.target.closest("a[href^='#']");
+      if(!a) return;
+      const id = a.getAttribute("href").slice(1);
+      if(!id) return;
+      const target = document.getElementById(id);
+      if(!target) return;
+      e.preventDefault();
+      const offset = target.getBoundingClientRect().top + window.scrollY - 72;
+      smoothScrollTo(offset, 750);
+      // Close mobile menu if open
+      if(typeof closeMobile === "function") closeMobile();
+    });
+  })();
+
+  // cookieRevoke handler moved to tracking script (after showBanner is defined)
+
+
+  // ── COOKIE BURST + HAPTIC FEEDBACK ───────────────────────
+  (function(){
+    const COOKIES = ["🍪","🍪","🍪","🍪","🍪","🍪","🍪"];
+
+    function burstCookies(x, y){
+      const count = 7 + Math.floor(Math.random()*4);
+      for(let i=0;i<count;i++){
+        const el = document.createElement("div");
+        el.className = "cookie-burst";
+        el.textContent = COOKIES[Math.floor(Math.random()*COOKIES.length)];
+        const angle  = (Math.PI*2/count)*i + Math.random()*.5;
+        const dist1  = 60 + Math.random()*80;
+        const dist2  = dist1 + 20 + Math.random()*40;
+        const rot    = (Math.random()-0.5)*360;
+        el.style.left = x+"px";
+        el.style.top  = y+"px";
+        el.style.setProperty("--tx", Math.cos(angle)*dist1+"px");
+        el.style.setProperty("--ty", Math.sin(angle)*dist1+"px");
+        el.style.setProperty("--tx2", Math.cos(angle)*dist2+"px");
+        el.style.setProperty("--ty2", Math.sin(angle)*dist2+"px");
+        el.style.setProperty("--rot",  rot+"deg");
+        el.style.setProperty("--rot2", rot*1.5+"deg");
+        el.style.animationDelay = (i*35)+"ms";
+        document.body.appendChild(el);
+        setTimeout(()=>el.remove(), 1100);
+      }
+      // Vibration (mobile)
+      if(navigator.vibrate) navigator.vibrate([12, 40, 8]);
     }
-  });
-  checkSession();
-  updateUTMPreview();
-  ["utmSource","utmMedium","utmCampaign","utmBaseUrl","utmName"].forEach(id => {
-    document.getElementById(id)?.addEventListener("input", updateUTMPreview);
-  });
-});
 
-// ── AUTH ──────────────────────────────────────────────
-async function checkSession(){
-  const { data:{ session } } = await sb.auth.getSession();
-  if(session) showDash(session.user);
-}
-
-async function doLogin(){
-  const email = document.getElementById("loginEmail").value.trim();
-  const pass  = document.getElementById("loginPass").value;
-  const btn   = document.getElementById("loginBtn");
-  const err   = document.getElementById("loginErr");
-  err.textContent = "";
-  btn.innerHTML = '<div class="spinner"></div>';
-  btn.disabled = true;
-
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-  if(error){
-    err.textContent = "Email ou mot de passe incorrect";
-    btn.innerHTML = "<span id='loginBtnText'>Connexion</span>";
-    btn.disabled = false;
-  } else {
-    showDash(data.user);
-  }
-}
-
-function showDash(user){
-  document.getElementById("loginScreen").style.display = "none";
-  document.getElementById("dashApp").style.display = "flex";
-  const name = user.email.split("@")[0];
-  document.getElementById("sbEmail").textContent = user.email;
-  document.getElementById("sbAvatar").textContent = name[0].toUpperCase();
-  updateTopSub();
-  loadAll();
-  startInactivityTimer();
-}
-
-async function doLogout(){
-  await sb.auth.signOut();
-  location.reload();
-}
-
-// ── INACTIVITY TIMER (30s sans activité → modal 5s → déco) ──
-let inactTimer = null, countdownTimer = null;
-const INACT_DELAY = 30 * 1000; // 30 secondes
-const INACT_COUNTDOWN = 5;     // 5 secondes pour répondre
-
-function resetInactivityTimer(){
-  clearTimeout(inactTimer);
-  // Si le modal est affiché, on le cache
-  const overlay = document.getElementById("inactOverlay");
-  if(overlay && overlay.classList.contains("show")){
-    overlay.classList.remove("show");
-    clearInterval(countdownTimer);
-  }
-  inactTimer = setTimeout(showInactivityModal, INACT_DELAY);
-}
-
-function showInactivityModal(){
-  const overlay = document.getElementById("inactOverlay");
-  const counter = document.getElementById("inactCount");
-  if(!overlay) return;
-  overlay.classList.add("show");
-  let remaining = INACT_COUNTDOWN;
-  counter.textContent = remaining;
-  countdownTimer = setInterval(() => {
-    remaining--;
-    counter.textContent = remaining;
-    if(remaining <= 0){
-      clearInterval(countdownTimer);
-      doLogout();
+    // Haptic click ripple (Apple-style)
+    function hapticClick(x, y){
+      const el = document.createElement("div");
+      el.className = "haptic-ripple";
+      el.style.left = x+"px";
+      el.style.top  = y+"px";
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(), 400);
+      if(navigator.vibrate) navigator.vibrate(6);
     }
-  }, 1000);
-}
 
-function startInactivityTimer(){
-  // Écouter toute activité
-  ["mousemove","mousedown","keydown","touchstart","scroll","click"].forEach(evt => {
-    document.addEventListener(evt, resetInactivityTimer, { passive: true });
+    // Attach cookie burst to consent buttons
+    document.addEventListener("DOMContentLoaded", ()=>{
+      // Intercept spvConsent accept
+      const origConsent = window.spvConsent;
+      window.spvConsent = function(yes, evt){
+        if(yes && evt){
+          burstCookies(evt.clientX, evt.clientY);
+        } else if(!yes && evt){
+          if(navigator.vibrate) navigator.vibrate([8, 20, 8]);
+        }
+        return origConsent(yes);
+      };
+
+      // Patch banner buttons after they're created (MutationObserver)
+      const observer = new MutationObserver(()=>{
+        const acceptBtn = document.getElementById("spvAcceptBtn");
+        const refuseBtn = document.getElementById("spvRefuseBtn");
+        if(acceptBtn && !acceptBtn._patched){
+          acceptBtn._patched = true;
+          acceptBtn.addEventListener("click", e => {
+            burstCookies(e.clientX, e.clientY);
+          });
+        }
+        if(refuseBtn && !refuseBtn._patched){
+          refuseBtn._patched = true;
+          refuseBtn.addEventListener("click", e => {
+            if(navigator.vibrate) navigator.vibrate([8,20,8]);
+          });
+        }
+      });
+      observer.observe(document.body, { childList:true, subtree:true });
+
+      // Haptic ripple on ALL button/link clicks
+      document.addEventListener("click", e=>{
+        const el = e.target.closest("button, a, .btn-submit, .slide-btn-handle, .nav-item");
+        if(el) hapticClick(e.clientX, e.clientY);
+      }, { passive:true });
+    });
+  })();
+
+  // ── Email (reconstruit en JS, jamais en clair dans le HTML) ──
+  (function(){
+    // @ = charCode 46+18, . = 46 — aucun pattern email dans le source
+    var at  = String.fromCharCode(64);
+    var dot = String.fromCharCode(46);
+    var e   = ["contact", at, "spv-peinture", dot, "fr"].join("");
+    var ml  = "mail" + "to:" + e;
+    window._spvEmail = e;
+    document.addEventListener("DOMContentLoaded", function(){
+      // Lien email dans la section contact
+      var el = document.getElementById("emailLink");
+      if(el){ el.href = ml; }
+      // Texte affiché dans section contact
+      var ed = document.getElementById("emailDisplay");
+      if(ed){ ed.textContent = e; }
+      // Footer email link dans colonne Contact direct
+      var ef = document.getElementById("emailLinkFooterCol");
+      if(ef){ ef.href = ml; ef.textContent = e; }
+      // Footer data-footer-email fallback
+      document.querySelectorAll("a[data-footer-email]").forEach(function(a){
+        a.href = ml; a.textContent = e;
+      });
+    });
+  })();
+
+  // Scroll reveal
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+  }, { threshold: 0.12 });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+
+  // Services -> select in form + scroll
+  window.selectService = (name) => {
+    const sel = document.getElementById('f-service');
+    if (sel) sel.value = name;
+    const ct = document.getElementById('contact'); if(ct){ const off = ct.getBoundingClientRect().top + window.scrollY - 72; smoothScrollTo(off, 750); }
+  };
+
+  // ── FORM SEND via Web3Forms ──────────────────────────────
+  // Remplace YOUR_ACCESS_KEY par la clé obtenue sur https://web3forms.com
+  // (gratuit : entre contact[at]spv-peinture.fr → reçois la clé par mail)
+  const WEB3_KEY = "b43598f0-38c2-4e0b-a87e-65bc2cbf18b2";
+
+  function setGrpError(id, hasErr){
+    const grp = document.getElementById(id);
+    if(!grp) return;
+    if(hasErr) grp.classList.add("has-error");
+    else grp.classList.remove("has-error");
+    const inp = grp.querySelector("input,textarea,select");
+    if(inp){
+      if(hasErr) inp.classList.add("error");
+      else inp.classList.remove("error");
+    }
+  }
+
+  function validate(){
+    const prenom  = document.getElementById("f-prenom").value.trim();
+    const nom     = document.getElementById("f-nom").value.trim();
+    const tel     = document.getElementById("f-tel").value.trim();
+    const service = document.getElementById("f-service").value.trim();
+    const msg     = document.getElementById("f-message").value.trim();
+
+    const telOk = /^(\+33|0033|0)[1-9][0-9]{8}$/.test(tel.replace(/[\s.\-]/g,""));
+
+    const errors = {
+      "grp-prenom":  !prenom,
+      "grp-nom":     !nom,
+      "grp-tel":     !tel || !telOk,
+      "grp-service": !service,
+      "grp-message": !msg,
+    };
+
+    let anyError = false;
+    for(const [id, hasErr] of Object.entries(errors)){
+      setGrpError(id, hasErr);
+      if(hasErr) anyError = true;
+    }
+
+    // clear errors on input
+    ["f-prenom","f-nom","f-tel","f-service","f-message"].forEach(fid => {
+      document.getElementById(fid).addEventListener("input", () => {
+        const grpId = "grp-" + fid.replace("f-","");
+        setGrpError(grpId, false);
+      }, { once:true });
+    });
+
+    return !anyError;
+  }
+
+  // ── SLIDE BUTTON LOGIC ───────────────────────────────────
+  (function(){
+    const wrap   = document.getElementById("slideWrap");
+    const fill   = document.getElementById("slideFill");
+    const handle = document.getElementById("slideHandle");
+    const label  = document.getElementById("slideLabel");
+    const status = document.getElementById("slideStatus");
+    if(!wrap) return;
+
+    let dragging = false;
+    let locked   = false;
+    let startX   = 0;
+    let currentX = 0;
+
+    function getMax(){ return wrap.clientWidth - 56; }
+
+    function moveTo(x){
+      const max = getMax();
+      x = Math.max(0, Math.min(x, max));
+      currentX = x;
+      handle.style.left = (4 + x) + "px";
+      fill.style.width  = (56 + x) + "px";
+      label.style.opacity = Math.max(0, 1 - (x / max) * 2.5);
+    }
+
+    function reset(delay){
+      delay = delay || 0;
+      setTimeout(function(){
+        locked = false;
+        handle.style.transition = "left .45s cubic-bezier(.34,1.56,.64,1)";
+        fill.style.transition   = "width .45s cubic-bezier(.34,1.56,.64,1), background .3s";
+        moveTo(0);
+        fill.classList.remove("success","error-fill");
+        handle.classList.remove("success","error-h");
+        handle.innerHTML = arrowSVG();
+        label.style.opacity = "1";
+        status.className = "slide-btn-status";
+        status.innerHTML = "";
+        setTimeout(function(){
+          handle.style.transition = "";
+          fill.style.transition   = "background .3s";
+        }, 500);
+      }, delay);
+    }
+
+    function arrowSVG(){
+      return '<svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
+    }
+
+    function checkSVG(){
+      return '<svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';
+    }
+
+    function crossSVG(){
+      return '<svg viewBox="0 0 24 24" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    }
+
+    function spinnerHTML(){
+      return '<div style="width:18px;height:18px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite"></div>';
+    }
+
+    function showStatus(cls, html){
+      status.innerHTML = html;
+      status.className = "slide-btn-status show " + cls;
+    }
+
+    function triggerSend(){
+      locked = true;
+      handle.style.transition = "left .25s ease, background .3s";
+      fill.style.transition   = "width .25s ease, background .3s";
+      moveTo(getMax());
+      label.style.opacity = "0";
+      handle.innerHTML = spinnerHTML();
+      showStatus("", "<div class='s-spinner'></div> Envoi en cours…");
+      sendForm();
+    }
+
+    handle.addEventListener("mousedown", function(e){
+      if(locked) return; dragging=true; startX=e.clientX-currentX;
+      handle.style.transition=""; fill.style.transition="background .3s"; e.preventDefault();
+    });
+    window.addEventListener("mousemove", function(e){
+      if(!dragging) return; moveTo(e.clientX - startX);
+    });
+    window.addEventListener("mouseup", function(){
+      if(!dragging) return; dragging=false;
+      if(currentX/getMax() >= 0.88) triggerSend(); else reset();
+    });
+    handle.addEventListener("touchstart", function(e){
+      if(locked) return; dragging=true; startX=e.touches[0].clientX-currentX;
+      handle.style.transition=""; fill.style.transition="background .3s";
+    },{passive:true});
+    window.addEventListener("touchmove", function(e){
+      if(!dragging) return; moveTo(e.touches[0].clientX - startX);
+    },{passive:true});
+    window.addEventListener("touchend", function(){
+      if(!dragging) return; dragging=false;
+      if(currentX/getMax() >= 0.88) triggerSend(); else reset();
+    });
+
+    window._slideSuccess = function(){
+      fill.classList.add("success"); handle.classList.add("success");
+      handle.innerHTML = checkSVG();
+      showStatus("success-msg","\u2713 Message envoy\u00e9 !");
+      ["f-prenom","f-nom","f-tel","f-service","f-message"].forEach(function(id){
+        var el=document.getElementById(id); if(el) el.value="";
+      });
+      reset(4000);
+    };
+
+    window._slideError = function(msg){
+      fill.classList.add("error-fill"); handle.classList.add("error-h");
+      handle.innerHTML = crossSVG();
+      showStatus("error-msg","\u2717 " + (msg || "Erreur \u2014 r\u00e9essayez"));
+      reset(2800);
+    };
+
+    window._slideValidationError = function(){
+      handle.classList.add("error-h");
+      fill.classList.add("error-fill");
+      handle.innerHTML = crossSVG();
+      showStatus("error-msg","\u2717 Remplissez tous les champs");
+      setTimeout(function(){ reset(); }, 2200);
+    };
+  })();
+
+  window.sendForm = async () => {
+    if(!validate()){
+      window._slideValidationError && window._slideValidationError();
+      return;
+    }
+
+    const prenom  = document.getElementById("f-prenom").value.trim();
+    const nom     = document.getElementById("f-nom").value.trim();
+    const tel     = document.getElementById("f-tel").value.trim();
+    const service = document.getElementById("f-service").value.trim();
+    const msg     = document.getElementById("f-message").value.trim();
+
+    try {
+      const res = await fetch("https://api.web3forms.com/submit", {
+        method:"POST",
+        headers:{"Content-Type":"application/json","Accept":"application/json"},
+        body: JSON.stringify({
+          access_key: WEB3_KEY,
+          subject: "Demande de devis SPV | " + service,
+          from_name: `${prenom} ${nom}`,
+          name: `${prenom} ${nom}`,
+          phone: tel,
+          service: service,
+          message: msg,
+          botcheck: ""
+        })
+      });
+      const data = await res.json();
+      if(data.success) window._slideSuccess && window._slideSuccess();
+      else throw new Error(data.message || "Erreur");
+    } catch(e){
+      console.error(e);
+      window._slideError && window._slideError("Erreur d'envoi");
+    }
+  };
+</script>
+
+<!-- THREE.JS MAP SCRIPT (module) -->
+<script type="module">
+  import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+
+  const GEOJSON_URL = "./departement-85-vendee.geojson";
+
+  const CITIES = [
+    { name:"La Roche-sur-Yon",    lat:46.6700, lon:-1.4260, main:true },
+    { name:"Les Sables-d'Olonne", lat:46.4960, lon:-1.7840 },
+    { name:"Challans",            lat:46.8460, lon:-1.8780 },
+    { name:"Fontenay-le-Comte",   lat:46.4660, lon:-0.8070 },
+    { name:"Luçon",               lat:46.4540, lon:-1.1670 },
+    { name:"Saint-Jean-de-Monts", lat:46.7930, lon:-2.0660 },
+    { name:"La Châtaigneraie",    lat:46.6470, lon:-0.7430 },
+    { name:"Montaigu-Vendée",     lat:46.9730, lon:-1.3140 },
+    { name:"Saint-Gilles-Croix-de-Vie", lat:46.6970, lon:-1.9450 },
+    { name:"Noirmoutier",         lat:47.0000, lon:-2.2480 },
+    { name:"L'Île-d'Yeu",        lat:46.7220, lon:-2.3500 },
+    { name:"Chantonnay",          lat:46.6880, lon:-1.0500 },
+    { name:"Les Herbiers",        lat:46.8700, lon:-1.0150 },
+    { name:"La Tranche-sur-Mer",  lat:46.3420, lon:-1.4380 },
+  ];
+
+  const card = document.getElementById("zoneMapCard");
+  const tip  = document.getElementById("zoneTip");
+
+  /* ── renderer ── */
+  const renderer = new THREE.WebGLRenderer({ antialias:true, alpha:true });
+  renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+  renderer.setSize(card.clientWidth, card.clientHeight);
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.shadowMap.enabled = false;
+  card.appendChild(renderer.domElement);
+
+  /* ── scene + camera ── */
+  const scene  = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(42, card.clientWidth / card.clientHeight, 0.1, 4000);
+  camera.up.set(0, 0, 1);
+
+  /* ── lighting ── */
+  scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+
+  const dir1 = new THREE.DirectionalLight(0xffffff, 1.1);
+  dir1.position.set(-180, -120, 300);
+  scene.add(dir1);
+
+  const dir2 = new THREE.DirectionalLight(0x6b8cff, 0.55);
+  dir2.position.set(220, 200, 200);
+  scene.add(dir2);
+
+  // Rim light from below-right for 3D depth
+  const dir3 = new THREE.DirectionalLight(0x1f3a8a, 0.4);
+  dir3.position.set(100, 300, -80);
+  scene.add(dir3);
+
+  const deptGroup = new THREE.Group();
+  scene.add(deptGroup);
+
+  /* ── interaction ── */
+  const raycaster = new THREE.Raycaster();
+  const mouse     = new THREE.Vector2(999, 999);
+  let cityMeshes  = [];
+  let hovered     = null;
+
+  window.addEventListener("resize", () => {
+    const w = card.clientWidth, h = card.clientHeight;
+    renderer.setSize(w, h, false);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
   });
-  // Déconnexion si l'onglet est fermé ou si on navigue ailleurs
-  window.addEventListener("pagehide", () => { doLogout(); });
-  window.addEventListener("beforeunload", () => { sb.auth.signOut(); });
-  document.addEventListener("visibilitychange", () => {
-    if(document.hidden){
-      clearTimeout(inactTimer);
-      inactTimer = setTimeout(doLogout, 3000);
-    } else {
-      // Vérifier que la session est toujours valide au retour
-      sb.auth.getSession().then(({ data:{ session } }) => {
-        if(!session){ location.reload(); }
-        else { resetInactivityTimer(); }
+
+  /* ── GeoJSON helpers ── */
+  function computeBounds(geometry){
+    let minX=Infinity, minY=Infinity, maxX=-Infinity, maxY=-Infinity;
+    const visit = cs => { for(const [x,y] of cs){ if(x<minX)minX=x; if(y<minY)minY=y; if(x>maxX)maxX=x; if(y>maxY)maxY=y; }};
+    const walkP = p => { for(const r of p) visit(r); };
+    if(geometry.type==="Polygon") walkP(geometry.coordinates);
+    else if(geometry.type==="MultiPolygon") for(const p of geometry.coordinates) walkP(p);
+    return { minX, minY, maxX, maxY };
+  }
+
+  function ll2xy(lon, lat, bounds, size){
+    const cx=(bounds.minX+bounds.maxX)/2, cy=(bounds.minY+bounds.maxY)/2;
+    const sc=size/Math.max(bounds.maxX-bounds.minX, bounds.maxY-bounds.minY);
+    return { x:(lon-cx)*sc, y:(lat-cy)*sc, sc };
+  }
+
+  function buildShapes(geometry, bounds, size){
+    const r2v = ring => ring.map(([lo,la]) => { const p=ll2xy(lo,la,bounds,size); return new THREE.Vector2(p.x,p.y); });
+    const shapes = [];
+    const addPoly = poly => {
+      const sh = new THREE.Shape(r2v(poly[0]));
+      for(let i=1;i<poly.length;i++) sh.holes.push(new THREE.Path(r2v(poly[i])));
+      shapes.push(sh);
+    };
+    if(geometry.type==="Polygon") addPoly(geometry.coordinates);
+    if(geometry.type==="MultiPolygon") for(const p of geometry.coordinates) addPoly(p);
+    return shapes;
+  }
+
+  function fitCamera(cam, obj, padding=1.02){
+    const box  = new THREE.Box3().setFromObject(obj);
+    const size = box.getSize(new THREE.Vector3());
+    const ctr  = box.getCenter(new THREE.Vector3());
+    const dim  = Math.max(size.x, size.y) * padding;
+    const fov  = THREE.MathUtils.degToRad(cam.fov);
+    const dist = Math.max((dim/2)/Math.tan(fov/2), (dim/2)/(Math.tan(fov/2)*cam.aspect));
+    // Tighter top-angled view, less Y offset so map fills the card
+    cam.position.set(ctr.x, ctr.y - dist*0.28, ctr.z + dist*0.92);
+    cam.lookAt(ctr);
+    cam.updateProjectionMatrix();
+  }
+
+  /* ── Build extruded department ── */
+  function makeDepartment(geometry){
+    const bounds = computeBounds(geometry);
+    const SIZE   = 270;
+    const shapes = buildShapes(geometry, bounds, SIZE);
+    const DEPTH  = 16;
+
+    const geo = new THREE.ExtrudeGeometry(shapes, { depth:DEPTH, bevelEnabled:false });
+    geo.computeVertexNormals();
+
+    // Top face: site blue, sides: darker
+    const matTop = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(0x1a3580),
+      roughness: 0.45,
+      metalness: 0.12,
+    });
+
+    const mesh = new THREE.Mesh(geo, matTop);
+
+    // Glowing edge lines
+    const edgesGeo = new THREE.EdgesGeometry(geo, 10);
+    const edgesMat = new THREE.LineBasicMaterial({
+      color: new THREE.Color(0x4d7aff),
+      transparent: true,
+      opacity: 0.85,
+    });
+    const edges = new THREE.LineSegments(edgesGeo, edgesMat);
+
+    deptGroup.clear();
+    deptGroup.add(mesh);
+    deptGroup.add(edges);
+    deptGroup.rotation.set(0,0,0);
+    deptGroup.position.set(0,0,0);
+
+    cityMeshes = CITIES.map(c => addCityMarker(c, bounds, SIZE, DEPTH));
+    fitCamera(camera, deptGroup);
+  }
+
+  /* ── City markers with always-on pulse ── */
+  function addCityMarker(city, bounds, size, depth){
+    const {x,y} = ll2xy(city.lon, city.lat, bounds, size);
+    const z = depth + 1.0;
+    const isMain = city.main;
+
+    // Core dot
+    const dotR   = isMain ? 3.4 : 2.2;
+    const dotGeo = new THREE.SphereGeometry(dotR, 28, 18);
+    const dotMat = new THREE.MeshStandardMaterial({
+      color:            new THREE.Color(isMain ? 0xffffff : 0xdde8ff),
+      emissive:         new THREE.Color(isMain ? 0xd95f1a : 0x2a4db5),
+      emissiveIntensity: isMain ? 0.9 : 0.55,
+      roughness: 0.25,
+      metalness: 0.05,
+    });
+    const dot = new THREE.Mesh(dotGeo, dotMat);
+    dot.position.set(x, y, z);
+    dot.userData.city = city;
+
+    // Outer ring (always visible at low opacity, expands on hover)
+    const rInner = isMain ? 4.4 : 3.2;
+    const rOuter = isMain ? 6.2 : 4.8;
+    const ringGeo = new THREE.RingGeometry(rInner, rOuter, 52);
+    const ringMat = new THREE.MeshBasicMaterial({
+      color:       new THREE.Color(isMain ? 0xd95f1a : 0x4d7aff),
+      transparent: true,
+      opacity:     isMain ? 0.22 : 0.14,
+      side:        THREE.DoubleSide,
+    });
+    const ring = new THREE.Mesh(ringGeo, ringMat);
+    ring.position.set(x, y, z + 0.15);
+
+    // Second outer pulse ring
+    const ring2Geo = new THREE.RingGeometry(rOuter + 1, rOuter + 2.5, 52);
+    const ring2Mat = new THREE.MeshBasicMaterial({
+      color:       new THREE.Color(isMain ? 0xd95f1a : 0x4d7aff),
+      transparent: true,
+      opacity:     0.0,
+      side:        THREE.DoubleSide,
+    });
+    const ring2 = new THREE.Mesh(ring2Geo, ring2Mat);
+    ring2.position.set(x, y, z + 0.2);
+
+    deptGroup.add(dot);
+    deptGroup.add(ring);
+    deptGroup.add(ring2);
+
+    // Each city gets its own phase offset for the pulse
+    const phase = Math.random() * Math.PI * 2;
+
+    return { city, dot, ring, ring2, phase };
+  }
+
+  /* ── Mouse ── */
+  renderer.domElement.addEventListener("mousemove", ev => {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((ev.clientX - rect.left) / rect.width)  *  2 - 1;
+    mouse.y = ((ev.clientY - rect.top)  / rect.height) * -2 + 1;
+  });
+  renderer.domElement.addEventListener("mouseleave", () => {
+    mouse.set(999, 999);
+    setHovered(null);
+  });
+
+  function setHovered(obj){
+    if(hovered === obj) return;
+    hovered = obj;
+    if(hovered) tip.classList.add("on");
+    else        tip.classList.remove("on");
+  }
+
+  function updateTooltip(){
+    if(!hovered) return;
+    const v = hovered.dot.position.clone();
+    hovered.dot.parent.localToWorld(v);
+    v.project(camera);
+    const rect = renderer.domElement.getBoundingClientRect();
+    tip.style.left = ((v.x *  0.5 + 0.5) * rect.width)  + "px";
+    tip.style.top  = ((v.y * -0.5 + 0.5) * rect.height) + "px";
+    tip.innerHTML  = `${hovered.city.name}<small>Vendée (85)</small>`;
+  }
+
+  /* ── Animate loop ── */
+  function animate(t){
+    requestAnimationFrame(animate);
+
+    // Hover detection
+    raycaster.setFromCamera(mouse, camera);
+    const dots = cityMeshes.map(o => o.dot);
+    const hits = raycaster.intersectObjects(dots, false);
+    const hitObj = hits.length ? cityMeshes.find(o => o.dot === hits[0].object) : null;
+    setHovered(hitObj || null);
+
+    const T = t * 0.001;
+
+    // Subtle map motion: very slow gentle sway + slight Z rotation
+    deptGroup.rotation.z = Math.sin(T * 0.18) * 0.018;
+    deptGroup.position.z = Math.sin(T * 0.22) * 1.8;
+
+    cityMeshes.forEach(({ city, dot, ring, ring2, phase }) => {
+      const isH  = (hovered && hovered.dot === dot);
+      const speed = city.main ? 1.4 : 1.8 + Math.sin(phase) * 0.4;
+      const pulse = Math.sin(T * speed + phase);
+
+      // Always-on subtle scale pulse on the dot
+      const baseScale = isH ? 1.18 : 1.0;
+      dot.scale.setScalar(baseScale + 0.07 * Math.sin(T * speed * 1.3 + phase));
+
+      // Ring: expand slowly, always visible
+      const rBase = isH ? 0.75 : (city.main ? 0.22 : 0.14);
+      ring.material.opacity = rBase + 0.12 * pulse;
+      ring.scale.setScalar(isH ? (1.0 + 0.22 * Math.abs(pulse)) : (0.95 + 0.08 * pulse));
+
+      // Outer pulse ring: ripple outward, only main city & hovered
+      if(city.main || isH){
+        const r2phase = (T * (city.main ? 1.1 : 1.5) + phase) % (Math.PI * 2);
+        const r2p = Math.max(0, Math.sin(r2phase));
+        ring2.material.opacity = r2p * (isH ? 0.5 : 0.28);
+        ring2.scale.setScalar(1.0 + r2p * 0.35);
+      } else {
+        ring2.material.opacity = 0;
+      }
+    });
+
+    updateTooltip();
+    renderer.render(scene, camera);
+  }
+
+  /* ── Load GeoJSON ── */
+  async function load(){
+    try {
+      const res = await fetch(GEOJSON_URL, { cache:"no-store" });
+      if(!res.ok) throw new Error("GeoJSON " + res.status);
+      const gj  = await res.json();
+      const geo = gj.geometry || (gj.features && gj.features[0] && gj.features[0].geometry) || gj;
+      if(!geo) throw new Error("Geometry introuvable");
+      makeDepartment(geo);
+      requestAnimationFrame(animate);
+    } catch(e){
+      console.warn("SPV Map:", e.message);
+      // Fallback: show a styled placeholder
+      card.innerHTML += '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem"><div style="font-family:Montserrat,sans-serif;font-size:3rem;font-weight:900;color:rgba(31,58,138,.3);letter-spacing:-.05em">85</div><p style="font-size:.75rem;color:rgba(255,255,255,.25);font-family:Inter,sans-serif">Carte non disponible — placer le fichier .geojson dans le même dossier</p></div>';
+    }
+  }
+
+  load();
+</script>
+
+
+<!-- ══ SPV ANALYTICS TRACKING ══════════════════════════════ -->
+<!-- Remplace les deux valeurs ci-dessous avec tes clés Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  const SUPA_URL = "https://togigjvqmtojnwnyipej.supabase.co";
+  const SUPA_KEY = "sb_publishable_97IFltYBm28jnNBqnaORxQ_1Ox8txSI";
+
+  // ── Helpers ───────────────────────────────────────────
+  const getCookie  = n => document.cookie.split(";").map(c=>c.trim()).find(c=>c.startsWith(n+"="))?.split("=")[1];
+  const setCookie  = (n,v,d) => { const e=new Date(); e.setDate(e.getDate()+d); document.cookie=`${n}=${v};expires=${e};path=/;SameSite=Lax`; };
+  const getParam   = n => new URLSearchParams(location.search).get(n);
+  const uid        = () => Math.random().toString(36).substr(2,12)+Date.now().toString(36);
+
+  // ── Consent check ─────────────────────────────────────
+  function hasConsent(){ return getCookie("spv_consent") === "yes"; }
+
+  // ── Cookie Banner ──────────────────────────────────────
+  function showBanner(){
+    // Affiche si pas encore de choix explicite
+    if(getCookie("spv_consent") === "yes") return;
+    if(document.getElementById("spv-cookie-banner")) return;
+    var b = document.createElement("div");
+    b.id = "spv-cookie-banner";
+    b.style.cssText = "position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;max-width:540px;width:calc(100% - 3rem);background:#121928;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:1.2rem 1.4rem;box-shadow:0 16px 60px rgba(0,0,0,.8);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;animation:slideUpBanner .35s cubic-bezier(.34,1.56,.64,1)";
+    b.innerHTML = '<div style="flex:1;min-width:200px"><p style="font-family:Montserrat,sans-serif;font-size:.78rem;font-weight:700;color:#fff;margin-bottom:.3rem">🍪 Ce site utilise des cookies analytiques</p><p style="font-size:.72rem;color:rgba(255,255,255,.45);line-height:1.5">Pour mesurer l&#39;audience et améliorer nos services. Aucune donnée personnelle vendue.</p></div><div style="display:flex;gap:.6rem;flex-shrink:0"><button id="spvRefuseBtn" style="padding:.5rem 1rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:5px;color:rgba(255,255,255,.6);font-size:.72rem;font-weight:600;cursor:pointer;font-family:Montserrat,sans-serif">Refuser</button><button id="spvAcceptBtn" style="padding:.5rem 1rem;background:#1f3a8a;border:none;border-radius:5px;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;letter-spacing:.04em">Accepter</button></div>';
+    document.body.appendChild(b);
+    // Bindings directs (pas de onclick inline pour éviter les problèmes de scope)
+    document.getElementById("spvAcceptBtn").onclick = function(){ window.spvConsent(true); };
+    document.getElementById("spvRefuseBtn").onclick = function(){ window.spvConsent(false); };
+  }
+  // ── COOKIE REVOKE BUTTON ──────────────────────────────────
+  document.addEventListener("DOMContentLoaded", function(){
+    var rBtn = document.getElementById("cookieRevoke");
+    if(rBtn){
+      rBtn.addEventListener("click", function(e){
+        e.preventDefault();
+        ["spv_consent","spv_vid"].forEach(function(n){
+          document.cookie = n + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
+        });
+        var ex = document.getElementById("spv-cookie-banner");
+        if(ex) ex.remove();
+        // Forcer réaffichage même si cookie "no" existait
+        setTimeout(showBanner, 50);
       });
     }
   });
-  // Bouton "Je suis toujours là"
-  document.getElementById("inactStay")?.addEventListener("click", resetInactivityTimer);
-  // Démarrer
-  resetInactivityTimer();
-}
 
-// ── NAVIGATION ───────────────────────────────────────
-const PAGE_TITLES = {
-  overview:"Vue d'ensemble", visitors:"Visiteurs", conversion:"Conversions",
-  scroll:"Scroll & Temps", utm:"Liens trackés", sources:"Sources"
-};
 
-function showPage(id, el){
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".sb-item").forEach(i => i.classList.remove("active"));
-  document.getElementById("page-"+id)?.classList.add("active");
-  el?.classList.add("active");
-  document.getElementById("topTitle").textContent = PAGE_TITLES[id] || id;
-}
 
-function setRange(days, el){
-  currentRange = days;
-  document.querySelectorAll(".date-btn").forEach(b => b.classList.remove("active"));
-  el.classList.add("active");
-  updateTopSub();
-  loadAll();
-}
-
-function updateTopSub(){
-  const end = new Date(); const start = new Date();
-  start.setDate(start.getDate() - currentRange);
-  document.getElementById("topSub").textContent =
-    `${fmt(start)} → ${fmt(end)}`;
-}
-
-function fmt(d){ return d.toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"}); }
-function fmtShort(d){ return new Date(d).toLocaleDateString("fr-FR",{day:"2-digit",month:"short"}); }
-function fmtFull(d){ return new Date(d).toLocaleString("fr-FR",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}); }
-
-// ── LOAD ALL DATA ─────────────────────────────────────
-async function loadAll(){
-  const since = new Date();
-  since.setDate(since.getDate() - currentRange);
-  const iso = since.toISOString();
-
-  const [{ data: visits }, { data: utmLinks }] = await Promise.all([
-    sb.from("page_visits").select("*").gte("created_at", iso).order("created_at", { ascending: false }),
-    sb.from("utm_links").select("*").order("created_at", { ascending: false })
-  ]);
-
-  const v = visits || [];
-  const u = utmLinks || [];
-
-  renderOverview(v);
-  renderVisitors(v);
-  renderConversion(v);
-  renderScroll(v);
-  renderUTM(v, u);
-  renderSources(v);
-}
-
-// ── OVERVIEW ──────────────────────────────────────────
-function renderOverview(v){
-  const total   = v.length;
-  const forms   = v.filter(x => x.form_submitted).length;
-  const conv    = total > 0 ? ((forms/total)*100).toFixed(1) : 0;
-  const avgTime = total > 0 ? Math.round(v.reduce((a,x)=>a+(x.time_on_page||0),0)/total) : 0;
-
-  document.getElementById("kpiVisitors").textContent = total.toLocaleString("fr-FR");
-  document.getElementById("kpiForms").textContent    = forms;
-  document.getElementById("kpiConv").textContent     = conv + "%";
-  document.getElementById("kpiTime").textContent     = avgTime < 60 ? avgTime+"s" : Math.floor(avgTime/60)+"m"+(avgTime%60)+"s";
-
-  // Traffic chart (daily)
-  const days = {}; const labels = [];
-  for(let i = currentRange-1; i >= 0; i--){
-    const d = new Date(); d.setDate(d.getDate()-i);
-    const k = d.toISOString().split("T")[0];
-    days[k] = 0;
-    labels.push(fmtShort(d));
-  }
-  v.forEach(x => { const k = x.created_at?.split("T")[0]; if(k in days) days[k]++; });
-  buildChart("trafficChart", "line", labels, Object.values(days), "Visites", "#1f3a8a");
-
-  // Device donut
-  const devCount = {};
-  v.forEach(x => { const d = x.device_type||"inconnu"; devCount[d] = (devCount[d]||0)+1; });
-  const devLabels = Object.keys(devCount);
-  const devData   = Object.values(devCount);
-  buildDoughnut("deviceChart", devLabels, devData, ["#1f3a8a","#22c55e","#f0cc4e","#fb923c"]);
-
-  // New vs Returning
-  const newV  = v.filter(x => x.is_new_visitor).length;
-  const retV  = v.filter(x => !x.is_new_visitor).length;
-  buildDoughnut("newReturnChart", ["Nouveaux","Retours"], [newV, retV], ["#2a4db5","#16a34a"]);
-
-  // Browsers
-  const brCount = {};
-  v.forEach(x => { const b = x.browser||"Autre"; brCount[b] = (brCount[b]||0)+1; });
-  const sorted = Object.entries(brCount).sort((a,b)=>b[1]-a[1]);
-  const bList = document.getElementById("browserList");
-  bList.innerHTML = sorted.map(([b,c])=>{
-    const pct = total > 0 ? Math.round(c/total*100) : 0;
-    return `<div style="padding:.4rem .5rem">
-      <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.3rem">
-        <span style="color:var(--txt)">${b}</span>
-        <span style="color:var(--txt2);font-family:var(--font-mono)">${pct}% <span style="color:var(--txt3)">(${c})</span></span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-    </div>`;
-  }).join("");
-}
-
-// ── VISITORS ──────────────────────────────────────────
-function renderVisitors(v){
-  // Heatmap
-  const hours = Array(24).fill(0);
-  v.forEach(x => { if(x.hour_of_visit != null) hours[x.hour_of_visit]++; });
-  const max = Math.max(...hours, 1);
-  const grid = document.getElementById("heatmapGrid");
-  const lbl  = document.getElementById("heatmapLabels");
-  grid.innerHTML = hours.map((c,h)=>{
-    const int = c/max;
-    const bg = int === 0 ? "rgba(255,255,255,.04)"
-      : `rgba(31,58,138,${0.15 + int*0.8})`;
-    return `<div class="hm-cell" style="background:${bg}" data-tip="${h}h : ${c} visite${c>1?'s':''}"></div>`;
-  }).join("");
-  lbl.innerHTML = hours.map((_,h)=>`<div class="hm-label">${h}h</div>`).join("");
-
-  // Table
-  document.getElementById("visitorCount").textContent = `${v.length} visiteurs`;
-  const tbody = document.getElementById("visitorTable");
-  if(v.length === 0){ tbody.innerHTML=`<tr><td colspan="7" class="empty-state">Aucun visiteur sur cette période</td></tr>`; return; }
-  tbody.innerHTML = v.slice(0,50).map(x => {
-    const src = sourceTag(x.utm_source || x.referrer);
-    return `<tr>
-      <td class="mono">${fmtFull(x.created_at)}</td>
-      <td>${deviceIcon(x.device_type)} ${x.device_type||"—"}</td>
-      <td>${x.browser||"—"}</td>
-      <td>${src}</td>
-      <td>${x.is_new_visitor ? '<span class="badge badge-green">Nouveau</span>' : '<span class="badge badge-gray">Retour</span>'}</td>
-      <td>${x.form_submitted ? '<span class="badge badge-blue">✓ Oui</span>' : '<span style="color:var(--txt3);font-size:.72rem">Non</span>'}</td>
-      <td><span class="mono" style="color:${x.scroll_depth>75?'#4ade80':x.scroll_depth>40?'#f0cc4e':'var(--txt3)'}">${x.scroll_depth||0}%</span></td>
-    </tr>`;
-  }).join("");
-}
-
-// ── CONVERSION ────────────────────────────────────────
-function renderConversion(v){
-  const total = v.length;
-  const forms = v.filter(x => x.form_submitted);
-  const conv  = total > 0 ? ((forms.length/total)*100).toFixed(1) : 0;
-  document.getElementById("convForms").textContent    = forms.length;
-  document.getElementById("convVisitors").textContent = total;
-  document.getElementById("convRate").textContent     = conv + "%";
-
-  // Conversion chart
-  const days = {}; const labels = [];
-  for(let i=currentRange-1;i>=0;i--){
-    const d=new Date(); d.setDate(d.getDate()-i);
-    const k=d.toISOString().split("T")[0];
-    days[k]=0; labels.push(fmtShort(d));
-  }
-  forms.forEach(x=>{ const k=x.created_at?.split("T")[0]; if(k in days) days[k]++; });
-  buildChart("convChart","bar",labels,Object.values(days),"Formulaires","#16a34a");
-
-  // Funnel
-  const scrolledHalf = v.filter(x=>(x.scroll_depth||0)>=50).length;
-  const scrolledFull = v.filter(x=>(x.scroll_depth||0)>=80).length;
-  const funnel = document.getElementById("funnelView");
-  const steps = [
-    {label:"Visiteurs",val:total,color:"#1f3a8a"},
-    {label:"Scroll 50%+",val:scrolledHalf,color:"#2a4db5"},
-    {label:"Scroll 80%+",val:scrolledFull,color:"#c9a327"},
-    {label:"Formulaire",val:forms.length,color:"#16a34a"},
-  ];
-  funnel.innerHTML = steps.map((s,i)=>{
-    const pct = total > 0 ? Math.round(s.val/total*100) : 0;
-    return `<div style="margin-bottom:.8rem">
-      <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:.3rem">
-        <span style="color:var(--txt);font-weight:600">${s.label}</span>
-        <span style="font-family:var(--font-mono);color:var(--txt2)">${s.val} <span style="color:var(--txt3)">(${pct}%)</span></span>
-      </div>
-      <div style="height:10px;background:rgba(255,255,255,.05);border-radius:999px;overflow:hidden">
-        <div style="height:100%;border-radius:999px;background:${s.color};width:${pct}%;transition:width 1s ease"></div>
-      </div>
-    </div>`;
-  }).join("");
-
-  // Form table
-  const tbody = document.getElementById("formTable");
-  tbody.innerHTML = forms.slice(0,30).map(x=>
-    `<tr><td class="mono">${fmtFull(x.created_at)}</td><td>${sourceTag(x.utm_source||x.referrer)}</td><td>${deviceIcon(x.device_type)} ${x.device_type||"—"}</td><td>${x.is_new_visitor?'<span class="badge badge-green">Nouveau</span>':'<span class="badge badge-gray">Retour</span>'}</td></tr>`
-  ).join("") || `<tr><td colspan="4" class="empty-state">Aucun formulaire sur cette période</td></tr>`;
-}
-
-// ── SCROLL ────────────────────────────────────────────
-function renderScroll(v){
-  const milestones = [25,50,75,90,100];
-  const total = v.length || 1;
-  const bars = document.getElementById("depthBars");
-  bars.innerHTML = milestones.map(m=>{
-    const cnt = v.filter(x=>(x.scroll_depth||0)>=m).length;
-    const pct = Math.round(cnt/total*100);
-    const color = m<=25?"#1f3a8a":m<=50?"#2a4db5":m<=75?"#c9a327":m<=90?"#ea580c":"#16a34a";
-    return `<div class="depth-row">
-      <div class="depth-label">${m}%</div>
-      <div class="depth-bar-wrap"><div class="depth-bar" style="width:${pct}%;background:${color}"></div></div>
-      <div class="depth-pct" style="color:${color}">${pct}%</div>
-    </div>`;
-  }).join("");
-
-  // Time distribution
-  const buckets = {"<30s":0,"30s-2m":0,"2-5m":0,"5-15m":0,">15m":0};
-  v.forEach(x=>{
-    const t = x.time_on_page||0;
-    if(t<30) buckets["<30s"]++;
-    else if(t<120) buckets["30s-2m"]++;
-    else if(t<300) buckets["2-5m"]++;
-    else if(t<900) buckets["5-15m"]++;
-    else buckets[">15m"]++;
-  });
-  buildChart("timeChart","bar",Object.keys(buckets),Object.values(buckets),"Visiteurs","#c9a327");
-
-  // Scroll by source
-  const srcScroll = {};
-  v.forEach(x=>{
-    const s = x.utm_source || (x.referrer ? "referral" : "direct");
-    if(!srcScroll[s]) srcScroll[s]={sum:0,cnt:0};
-    srcScroll[s].sum += x.scroll_depth||0;
-    srcScroll[s].cnt++;
-  });
-  const ssLabels = Object.keys(srcScroll);
-  const ssData   = ssLabels.map(s=>Math.round(srcScroll[s].sum/srcScroll[s].cnt));
-  buildChart("scrollSourceChart","bar",ssLabels,ssData,"Scroll moyen %","#2a4db5");
-}
-
-// ── UTM ───────────────────────────────────────────────
-function renderUTM(v, links){
-  // Build visit counts per utm_campaign
-  const campVisits = {}; const campConv = {};
-  v.forEach(x=>{
-    if(x.utm_campaign){
-      campVisits[x.utm_campaign] = (campVisits[x.utm_campaign]||0)+1;
-      if(x.form_submitted) campConv[x.utm_campaign]=(campConv[x.utm_campaign]||0)+1;
+  window.spvConsent = function(yes){
+    // Supprimer d'abord l'ancien cookie dans tous les cas
+    ["spv_consent","spv_vid"].forEach(function(n){
+      document.cookie = n + "=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
+    });
+    if(yes){
+      setCookie("spv_consent", "yes", 365);
+      initTracking();
+    } else {
+      // Refus : on pose un cookie "no" qui dure 30j pour ne pas respammer
+      setCookie("spv_consent", "no", 30);
     }
-  });
-
-  // UTM performance chart
-  if(Object.keys(campVisits).length > 0){
-    const cLabels = Object.keys(campVisits);
-    buildChart("utmChart","bar",cLabels,cLabels.map(k=>campVisits[k]),"Visites","#1f3a8a");
-  }
-
-  // Links table
-  document.getElementById("utmLinkCount").textContent = `${links.length} liens`;
-  const tbody = document.getElementById("utmTable");
-  if(links.length===0){
-    tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>Aucun lien généré pour l'instant</div></td></tr>`;
-    return;
-  }
-  tbody.innerHTML = links.map(l=>{
-    const visits = campVisits[l.utm_campaign] || 0;
-    const convs  = campConv[l.utm_campaign] || 0;
-    return `<tr>
-      <td style="font-weight:600;color:var(--txt)">${l.name||"—"}</td>
-      <td>${sourceTag(l.utm_source)}</td>
-      <td><span class="mono" style="color:var(--txt2)">${l.utm_campaign||"—"}</span></td>
-      <td><span style="font-family:var(--font-mono);font-weight:700;color:${visits>0?'#6b9ef8':'var(--txt3)'}">${visits}</span></td>
-      <td><span style="font-family:var(--font-mono);color:${convs>0?'#4ade80':'var(--txt3)'}">${convs}</span></td>
-      <td class="mono">${fmtShort(l.created_at)}</td>
-      <td><button class="btn-sec" style="padding:.25rem .6rem;font-size:.65rem" onclick="copyLink('${escapeAttr(l.full_url)}')">Copier</button></td>
-    </tr>`;
-  }).join("");
-}
-
-// ── SOURCES ───────────────────────────────────────────
-function renderSources(v){
-  const srcMap = {};
-  v.forEach(x=>{
-    let s = "Direct";
-    if(x.utm_source) s = x.utm_source;
-    else if(x.referrer && x.referrer.includes("google")) s = "google";
-    else if(x.referrer && x.referrer.includes("facebook")) s = "facebook";
-    else if(x.referrer && x.referrer !== "") s = "referral";
-    if(!srcMap[s]) srcMap[s]={visits:0,conv:0,scrollSum:0};
-    srcMap[s].visits++;
-    if(x.form_submitted) srcMap[s].conv++;
-    srcMap[s].scrollSum += (x.scroll_depth||0);
-  });
-
-  const entries = Object.entries(srcMap).sort((a,b)=>b[1].visits-a[1].visits);
-  const total = v.length || 1;
-  const colors = ["#1f3a8a","#16a34a","#c9a327","#ea580c","#8b5cf6","#06b6d4","#f43f5e"];
-
-  buildDoughnut("sourcePieChart", entries.map(e=>e[0]), entries.map(e=>e[1].visits), colors);
-
-  // Source line over time
-  const top3 = entries.slice(0,3).map(e=>e[0]);
-  const dayKeys = [];
-  for(let i=currentRange-1;i>=0;i--){
-    const d=new Date(); d.setDate(d.getDate()-i);
-    dayKeys.push(d.toISOString().split("T")[0]);
-  }
-  const datasets = top3.map((src,i)=>{
-    const vals = dayKeys.map(k=>
-      v.filter(x=>x.created_at?.startsWith(k) && (x.utm_source===src || (!x.utm_source && src==="Direct"))).length
-    );
-    return { label:src, data:vals, borderColor:colors[i], backgroundColor:"transparent", tension:.4, pointRadius:3 };
-  });
-  destroyChart("sourceLineChart");
-  charts["sourceLineChart"] = new Chart(document.getElementById("sourceLineChart"), {
-    type:"line",
-    data:{ labels:dayKeys.map(k=>fmtShort(k+"T00:00:00")), datasets },
-    options:chartOpts()
-  });
-
-  // Source table
-  const tbody = document.getElementById("sourceTable");
-  tbody.innerHTML = entries.map(([s, d])=>{
-    const pct  = Math.round(d.visits/total*100);
-    const avgS = d.visits > 0 ? Math.round(d.scrollSum/d.visits) : 0;
-    const sType = s==="Direct"?"direct":["google"].includes(s)?"organic":["facebook","instagram"].includes(s)?"social":"referral";
-    return `<tr>
-      <td style="font-weight:600;color:var(--txt)">${s}</td>
-      <td>${sourceTag(sType)}</td>
-      <td><span class="mono">${d.visits}</span></td>
-      <td>
-        <span class="mono">${pct}%</span>
-        <div class="progress-bar" style="margin-top:.3rem;width:80px"><div class="progress-fill" style="width:${pct}%"></div></div>
-      </td>
-      <td><span class="mono" style="color:${d.conv>0?'#4ade80':'var(--txt3)'}">${d.conv}</span></td>
-      <td><span class="mono" style="color:${avgS>60?'#4ade80':avgS>30?'#f0cc4e':'var(--txt3)'}">${avgS}%</span></td>
-    </tr>`;
-  }).join("") || `<tr><td colspan="6" class="empty-state">Aucune donnée</td></tr>`;
-}
-
-// ── UTM BUILDER ───────────────────────────────────────
-function updateUTMPreview(){
-  const base     = document.getElementById("utmBaseUrl")?.value || "https://spv-peinture.fr";
-  const source   = document.getElementById("utmSource")?.value || "";
-  const medium   = document.getElementById("utmMedium")?.value || "";
-  const campaign = document.getElementById("utmCampaign")?.value || "";
-  let url = base + "?utm_source=" + source + "&utm_medium=" + medium;
-  if(campaign) url += "&utm_campaign=" + encodeURIComponent(campaign);
-  document.getElementById("utmPreview").textContent = url;
-  return url;
-}
-
-async function saveUtmLink(){
-  const name     = document.getElementById("utmName").value.trim();
-  const source   = document.getElementById("utmSource").value;
-  const medium   = document.getElementById("utmMedium").value;
-  const campaign = document.getElementById("utmCampaign").value.trim();
-  const url      = updateUTMPreview();
-
-  if(!name || !campaign){ alert("Remplis le nom et la campagne."); return; }
-
-  const { error } = await sb.from("utm_links").insert({
-    name, utm_source:source, utm_medium:medium, utm_campaign:campaign, full_url:url
-  });
-  if(!error){
-    showToast("Lien sauvegardé !");
-    document.getElementById("utmName").value = "";
-    document.getElementById("utmCampaign").value = "";
-    loadAll();
-  } else {
-    alert("Erreur: " + error.message);
-  }
-}
-
-function copyUtmLink(){ copyToClipboard(document.getElementById("utmPreview").textContent); }
-function copyLink(url){ copyToClipboard(url); }
-
-function copyToClipboard(text){
-  navigator.clipboard.writeText(text).then(()=>showToast("✓ Lien copié !"));
-}
-
-function showToast(msg){
-  const t = document.getElementById("copyToast");
-  t.textContent = msg; t.classList.add("show");
-  setTimeout(()=>t.classList.remove("show"),2200);
-}
-
-// ── CSV EXPORT ────────────────────────────────────────
-async function exportCSV(){
-  const since = new Date(); since.setDate(since.getDate()-currentRange);
-  const { data:v } = await sb.from("page_visits").select("*").gte("created_at",since.toISOString());
-  if(!v||!v.length){ alert("Aucune donnée à exporter."); return; }
-
-  const cols = ["created_at","device_type","browser","os","utm_source","utm_medium","utm_campaign","referrer","scroll_depth","time_on_page","is_new_visitor","form_submitted"];
-  const rows = [cols.join(","), ...v.map(r=>cols.map(c=>JSON.stringify(r[c]??"")||'""').join(","))];
-  const blob = new Blob([rows.join("\n")], {type:"text/csv;charset=utf-8;"});
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = `spv-analytics-${new Date().toISOString().split("T")[0]}.csv`;
-  a.click();
-  showToast("Export CSV téléchargé !");
-}
-
-// ── CHARTS HELPERS ────────────────────────────────────
-function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
-
-function chartOpts(){
-  return {
-    responsive:true, maintainAspectRatio:true,
-    plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:"rgba(0,0,0,.85)", titleFont:{family:"JetBrains Mono",size:11}, bodyFont:{family:"JetBrains Mono",size:11}, padding:10, cornerRadius:6 } },
-    scales:{
-      x:{ grid:{ color:"rgba(255,255,255,.04)" }, ticks:{ color:"rgba(241,245,249,.35)", font:{family:"JetBrains Mono",size:10}, maxTicksLimit:10 } },
-      y:{ grid:{ color:"rgba(255,255,255,.04)" }, ticks:{ color:"rgba(241,245,249,.35)", font:{family:"JetBrains Mono",size:10} }, beginAtZero:true }
-    }
+    var banner = document.getElementById("spv-cookie-banner");
+    if(banner) banner.remove();
   };
-}
 
-function buildChart(id, type, labels, data, label, color){
-  destroyChart(id);
-  const ctx = document.getElementById(id);
-  if(!ctx) return;
-  const isBar = type === "bar";
-  charts[id] = new Chart(ctx, {
-    type,
-    data:{
-      labels,
-      datasets:[{
-        label, data,
-        borderColor:color,
-        backgroundColor: isBar ? color+"99" : color+"22",
-        borderWidth: isBar ? 0 : 2,
-        tension:.4, fill:!isBar,
-        borderRadius: isBar ? 4 : 0,
-        pointBackgroundColor: color,
-        pointRadius: isBar ? 0 : 3,
-        pointHoverRadius: isBar ? 0 : 5,
-      }]
-    },
-    options: chartOpts()
-  });
-}
+  // ── Tracking ───────────────────────────────────────────
+  function initTracking(){
+    const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
-function buildDoughnut(id, labels, data, colors){
-  destroyChart(id);
-  const ctx = document.getElementById(id);
-  if(!ctx) return;
-  charts[id] = new Chart(ctx, {
-    type:"doughnut",
-    data:{ labels, datasets:[{ data, backgroundColor:colors.map(c=>c+"cc"), borderColor:colors, borderWidth:1.5, hoverOffset:6 }] },
-    options:{
-      responsive:true, maintainAspectRatio:true, cutout:"68%",
-      plugins:{
-        legend:{ position:"bottom", labels:{ color:"rgba(241,245,249,.5)", font:{family:"Inter",size:11}, padding:12, boxWidth:10 } },
-        tooltip:{ backgroundColor:"rgba(0,0,0,.85)", titleFont:{family:"JetBrains Mono",size:11}, bodyFont:{family:"JetBrains Mono",size:11}, padding:10, cornerRadius:6 }
+    // Session & visitor IDs
+    let sessionId = sessionStorage.getItem("spv_sid");
+    if(!sessionId){ sessionId = uid(); sessionStorage.setItem("spv_sid", sessionId); }
+
+    let visitorId = getCookie("spv_vid");
+    const isNew   = !visitorId;
+    if(isNew){ visitorId = uid(); setCookie("spv_vid", visitorId, 365); }
+
+    // UTM params
+    const utmSource   = getParam("utm_source")   || sessionStorage.getItem("utm_source");
+    const utmMedium   = getParam("utm_medium")   || sessionStorage.getItem("utm_medium");
+    const utmCampaign = getParam("utm_campaign") || sessionStorage.getItem("utm_campaign");
+    if(getParam("utm_source")) sessionStorage.setItem("utm_source",   utmSource);
+    if(getParam("utm_medium")) sessionStorage.setItem("utm_medium",   utmMedium);
+    if(getParam("utm_campaign")) sessionStorage.setItem("utm_campaign", utmCampaign);
+
+    // Device detection
+    const ua = navigator.userAgent;
+    const isMobile = /Mobi|Android|iPhone/i.test(ua);
+    const isTablet = /iPad|Tablet/i.test(ua);
+    const device   = isTablet ? "tablet" : isMobile ? "mobile" : "desktop";
+
+    // Browser detection
+    let browser = "Autre";
+    if(/Chrome\//.test(ua) && !/Edg\//.test(ua) && !/OPR\//.test(ua)) browser = "Chrome";
+    else if(/Safari\//.test(ua) && !/Chrome/.test(ua)) browser = "Safari";
+    else if(/Firefox\//.test(ua)) browser = "Firefox";
+    else if(/Edg\//.test(ua)) browser = "Edge";
+    else if(/OPR\//.test(ua)) browser = "Opera";
+
+    // OS detection
+    let os = "Autre";
+    if(/Windows/.test(ua)) os = "Windows";
+    else if(/Mac OS X/.test(ua) && !isMobile) os = "macOS";
+    else if(/iPhone|iPad/.test(ua)) os = "iOS";
+    else if(/Android/.test(ua)) os = "Android";
+    else if(/Linux/.test(ua)) os = "Linux";
+
+    const hour  = new Date().getHours();
+    let visitId = null;
+    let scrollMax = 0;
+    const startTime = Date.now();
+
+    // Insert visit row
+    sb.from("page_visits").insert({
+      session_id:   sessionId,
+      visitor_id:   visitorId,
+      utm_source:   utmSource   || null,
+      utm_medium:   utmMedium   || null,
+      utm_campaign: utmCampaign || null,
+      referrer:     document.referrer || null,
+      page_url:     location.href,
+      device_type:  device,
+      browser,
+      os,
+      is_new_visitor: isNew,
+      hour_of_visit: hour,
+      scroll_depth:  0,
+      time_on_page:  0,
+      form_submitted: false
+    }).select("id").single().then(({ data, error }) => {
+      if(!error && data) visitId = data.id;
+    });
+
+    // Scroll tracking
+    let ticking = false;
+    const updateScroll = () => {
+      const el  = document.documentElement;
+      const pct = Math.round((window.scrollY / (el.scrollHeight - el.clientHeight)) * 100);
+      if(pct > scrollMax) scrollMax = pct;
+      ticking = false;
+    };
+    window.addEventListener("scroll", ()=>{
+      if(!ticking){ requestAnimationFrame(updateScroll); ticking=true; }
+    }, {passive:true});
+
+    // Periodic update (every 15s)
+    const persist = () => {
+      if(!visitId) return;
+      const secs = Math.round((Date.now() - startTime) / 1000);
+      sb.from("page_visits").update({
+        scroll_depth: scrollMax,
+        time_on_page: secs
+      }).eq("id", visitId);
+    };
+    setInterval(persist, 15000);
+
+    // Before unload
+    window.addEventListener("beforeunload", persist);
+
+    // Track form submission
+    const origSend = window.sendForm;
+    window.sendForm = async function(){
+      await origSend();
+      // Mark form submitted after a short delay (give sendForm time to run)
+      setTimeout(()=>{
+        if(visitId){
+          sb.from("page_visits").update({ form_submitted: true }).eq("id", visitId);
+        }
+      }, 2000);
+    };
+  }
+
+  // ── Expose sur window pour accès externe ──────────────
+  window._spvShowBanner   = showBanner;
+  window._spvInitTracking = initTracking;
+  window._spvHasConsent   = hasConsent;
+
+  // ── Boot ───────────────────────────────────────────────
+  const isLocal = ["localhost","127.0.0.1","0.0.0.0"].includes(location.hostname)
+    || location.hostname.startsWith("192.168.")
+    || location.hostname.startsWith("10.")
+    || location.protocol === "file:";
+  const isAdmin = document.cookie.includes("sb-") || sessionStorage.getItem("spv_is_admin");
+
+  function bootTracking(){
+    if(document.readyState === "loading"){
+      document.addEventListener("DOMContentLoaded", ()=>{ showBanner(); if(hasConsent()) initTracking(); });
+    } else {
+      showBanner();
+      if(hasConsent()) initTracking();
+    }
+  }
+
+  if(isLocal || isAdmin){
+    // Badge cliquable — toujours visible en local
+    function mountDevBadge(){
+      // Supprimer un éventuel ancien badge
+      document.getElementById("spvDevBadge")?.remove();
+      const active = sessionStorage.getItem("spv_dev_track") === "1";
+      const dev = document.createElement("div");
+      dev.id = "spvDevBadge";
+      if(active){
+        dev.style.cssText = "position:fixed;bottom:.5rem;left:.5rem;z-index:9999;background:rgba(34,197,94,.15);border:1px solid rgba(34,197,94,.35);color:#22c55e;font-size:.62rem;font-family:monospace;padding:.3rem .75rem;border-radius:5px;pointer-events:none";
+        dev.innerHTML = "✓ Tracking <b>actif</b> (dev)";
+      } else {
+        dev.style.cssText = "position:fixed;bottom:.5rem;left:.5rem;z-index:9999;background:rgba(201,163,39,.13);border:1px solid rgba(201,163,39,.3);color:#c9a327;font-size:.62rem;font-family:monospace;padding:.3rem .75rem;border-radius:5px;cursor:pointer;user-select:none;transition:background .2s";
+        dev.innerHTML = "⚙ Tracking <b>désactivé</b> — cliquer pour tester";
+        dev.addEventListener("mouseenter", ()=> dev.style.background = "rgba(201,163,39,.25)");
+        dev.addEventListener("mouseleave", ()=> dev.style.background = "rgba(201,163,39,.13)");
+        dev.addEventListener("click", ()=>{
+          sessionStorage.setItem("spv_dev_track","1");
+          setCookie("spv_consent","yes",1);
+          mountDevBadge();
+          // initTracking directement — pas de bannière en mode dev
+          try { initTracking(); } catch(e){ console.error("SPV tracking error:", e); }
+        });
+      }
+      document.body.appendChild(dev);
+      // Si déjà actif au chargement, lancer le tracking
+      if(active){
+        setCookie("spv_consent","yes",1);
+        bootTracking();
       }
     }
-  });
-}
-
-// ── HELPERS ───────────────────────────────────────────
-function sourceTag(src){
-  if(!src || src==="direct") return '<span class="tag-source tag-direct">Direct</span>';
-  if(["google","bing","duckduckgo"].some(s=>src.includes(s))) return `<span class="tag-source tag-organic">Organique</span>`;
-  if(["facebook","instagram","tiktok","twitter","linkedin"].some(s=>src.includes(s))) return `<span class="tag-source tag-social">${src}</span>`;
-  if(src==="email"||src==="newsletter") return `<span class="tag-source tag-email">Email</span>`;
-  return `<span class="tag-source tag-other">${src}</span>`;
-}
-
-function deviceIcon(d){
-  if(!d) return "";
-  if(d.includes("mobile")||d.includes("phone")) return "📱";
-  if(d.includes("tablet")) return "📟";
-  return "🖥️";
-}
-
-function escapeAttr(s){ return (s||"").replace(/'/g,"&#39;").replace(/"/g,"&quot;"); }
-
-// ── Login on Enter ────────────────────────────────────
-document.addEventListener("keydown", e => {
-  if(e.key === "Enter" && document.getElementById("loginScreen").style.display !== "none"){
-    doLogin();
+    if(document.readyState === "loading"){
+      document.addEventListener("DOMContentLoaded", mountDevBadge);
+    } else {
+      mountDevBadge();
+    }
+  } else {
+    bootTracking();
   }
-});
+})();
 </script>
-<!-- INACTIVITY MODAL -->
-<div class="inact-overlay" id="inactOverlay">
-  <div class="inact-box">
-    <div class="inact-icon">
-      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    </div>
-    <div class="inact-title">Session inactive</div>
-    <div class="inact-sub">Vous allez être déconnecté dans</div>
-    <div class="inact-counter" id="inactCount">5</div>
-    <button class="inact-btn" id="inactStay">Je suis toujours là</button>
-  </div>
-</div>
 
+<!-- TIMELINE SCROLL ANIMATION -->
+<script>
+  (function(){
+    const wrapper = document.getElementById("tlWrapper");
+    const fill    = document.getElementById("tlFill");
+    if(!wrapper || !fill) return;
+    function update(){
+      const wRect    = wrapper.getBoundingClientRect();
+      const wTop     = wRect.top + window.scrollY;
+      const wH       = wRect.height - 140;
+      const scrolled = window.scrollY + window.innerHeight * 0.55;
+      const progress = Math.max(0, Math.min(1, (scrolled - wTop) / wH));
+      fill.style.height = (progress * 100) + "%";
+      document.querySelectorAll(".tl-item").forEach((item) => {
+        const iRect = item.getBoundingClientRect();
+        const iTop  = iRect.top + window.scrollY;
+        if(scrolled > iTop + iRect.height * 0.15){ item.classList.add("tl-active"); }
+        else { item.classList.remove("tl-active"); }
+      });
+    }
+    window.addEventListener("scroll", update, { passive:true });
+    window.addEventListener("resize", update);
+    setTimeout(update, 200);
+  })();
+</script>
 </body>
 </html>
