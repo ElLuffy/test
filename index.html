@@ -418,7 +418,7 @@
       <div class="hero-stats">
         <div class="stat"><span class="stat-number">20+</span><span class="stat-label">Ans d'expérience</span></div>
         <div class="stat"><span class="stat-number">10 ans</span><span class="stat-label">Garantie décennale</span></div>
-        <div class="stat"><span class="stat-number">Dép. 85</span><span class="stat-label">Toute la Vendée</span></div>
+        <div class="stat"><span class="stat-number" style="white-space:nowrap">Dép.&nbsp;85</span><span class="stat-label">Toute la Vendée</span></div>
       </div>
     </div>
 
@@ -1256,7 +1256,7 @@
     return shapes;
   }
 
-  function fitCamera(cam, obj, padding=1.02){
+  function fitCamera(cam, obj, padding=1.22){
     const box  = new THREE.Box3().setFromObject(obj);
     const size = box.getSize(new THREE.Vector3());
     const ctr  = box.getCenter(new THREE.Vector3());
@@ -1371,6 +1371,40 @@
     mouse.set(999, 999);
     setHovered(null);
   });
+  // Touch support — hover on touch
+  renderer.domElement.addEventListener("touchmove", ev => {
+    ev.preventDefault();
+    const t = ev.touches[0];
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((t.clientX - rect.left) / rect.width)  *  2 - 1;
+    mouse.y = ((t.clientY - rect.top)  / rect.height) * -2 + 1;
+  }, { passive: false });
+  renderer.domElement.addEventListener("touchend", () => {
+    // Click on city — show tooltip briefly
+    const dots = cityMeshes.map(o => o.dot);
+    const hits = raycaster.intersectObjects(dots, false);
+    if(hits.length){
+      const obj = cityMeshes.find(o => o.dot === hits[0].object);
+      setHovered(obj);
+      setTimeout(() => { mouse.set(999,999); setHovered(null); }, 2500);
+    } else {
+      mouse.set(999, 999);
+      setHovered(null);
+    }
+  });
+  // Click on desktop city dots
+  renderer.domElement.addEventListener("click", ev => {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((ev.clientX - rect.left) / rect.width)  *  2 - 1;
+    mouse.y = ((ev.clientY - rect.top)  / rect.height) * -2 + 1;
+    const dots = cityMeshes.map(o => o.dot);
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(dots, false);
+    if(hits.length){
+      const obj = cityMeshes.find(o => o.dot === hits[0].object);
+      setHovered(obj);
+    }
+  });
 
   function setHovered(obj){
     if(hovered === obj) return;
@@ -1481,27 +1515,25 @@
     if(document.getElementById("spv-cookie-banner")) return;
     var b = document.createElement("div");
     b.id = "spv-cookie-banner";
-    b.style.cssText = "position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%);z-index:9999;max-width:540px;width:calc(100% - 3rem);background:#121928;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:1.2rem 1.4rem;box-shadow:0 16px 60px rgba(0,0,0,.8);display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;animation:slideUpBanner .35s cubic-bezier(.34,1.56,.64,1)";
-    b.innerHTML = '<div style="flex:1;min-width:200px"><p style="font-family:Montserrat,sans-serif;font-size:.78rem;font-weight:700;color:#fff;margin-bottom:.3rem">🍪 Ce site utilise des cookies analytiques</p><p style="font-size:.72rem;color:rgba(255,255,255,.45);line-height:1.5">Pour mesurer l&#39;audience et améliorer nos services. Aucune donnée personnelle vendue.</p></div><div style="display:flex;gap:.6rem;flex-shrink:0"><button id="spvRefuseBtn" style="padding:.5rem 1rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:5px;color:rgba(255,255,255,.6);font-size:.72rem;font-weight:600;cursor:pointer;font-family:Montserrat,sans-serif">Refuser</button><button id="spvAcceptBtn" style="padding:.5rem 1rem;background:#1f3a8a;border:none;border-radius:5px;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;letter-spacing:.04em">Accepter</button></div>';
+    b.style.cssText = "position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);z-index:9999;max-width:520px;width:calc(100% - 2rem);background:#121928;border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:1rem 1.2rem;box-shadow:0 16px 60px rgba(0,0,0,.85);display:flex;flex-direction:column;gap:.8rem;animation:slideUpBanner .35s cubic-bezier(.34,1.56,.64,1)";
+    b.innerHTML = '<p style="font-family:Montserrat,sans-serif;font-size:.78rem;font-weight:700;color:#fff;margin:0 0 .25rem">🍪 Ce site utilise des cookies analytiques</p><p style="font-size:.72rem;color:rgba(255,255,255,.45);line-height:1.5;margin:0">Pour mesurer l&#39;audience et améliorer nos services. Aucune donnée personnelle vendue.</p><div style="display:flex;gap:.6rem;justify-content:flex-end"><button id="spvRefuseBtn" style="padding:.5rem 1.1rem;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);border-radius:5px;color:rgba(255,255,255,.6);font-size:.72rem;font-weight:600;cursor:pointer;font-family:Montserrat,sans-serif">Refuser</button><button id="spvAcceptBtn" style="padding:.5rem 1.3rem;background:#1f3a8a;border:none;border-radius:5px;color:#fff;font-size:.72rem;font-weight:700;cursor:pointer;font-family:Montserrat,sans-serif;letter-spacing:.04em">Accepter</button></div>';
     document.body.appendChild(b);
     // Bindings directs (pas de onclick inline pour éviter les problèmes de scope)
     document.getElementById("spvAcceptBtn").onclick = function(){ window.spvConsent(true); };
     document.getElementById("spvRefuseBtn").onclick = function(){ window.spvConsent(false); };
   }
   // ── COOKIE REVOKE BUTTON ──────────────────────────────────
-  document.addEventListener("DOMContentLoaded", function(){
-    var rBtn = document.getElementById("cookieRevoke");
-    if(rBtn){
-      rBtn.addEventListener("click", function(e){
-        e.preventDefault();
-        // On supprime SEULEMENT le consentement, pas le visitor ID
-        document.cookie = "spv_consent=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
-        var ex = document.getElementById("spv-cookie-banner");
-        if(ex) ex.remove();
-        // Forcer réaffichage même si cookie "no" existait
-        setTimeout(showBanner, 50);
-      });
-    }
+  // Délégation sur document (fonctionne mobile + si DOM pas encore ready)
+  document.addEventListener("click", function(e){
+    var t = e.target.closest ? e.target.closest("#cookieRevoke") : null;
+    if(!t && e.target.id === "cookieRevoke") t = e.target;
+    if(!t) return;
+    e.preventDefault();
+    e.stopPropagation();
+    document.cookie = "spv_consent=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;SameSite=Lax";
+    var ex = document.getElementById("spv-cookie-banner");
+    if(ex) ex.remove();
+    setTimeout(function(){ showBanner(); }, 80);
   });
 
 
@@ -1531,14 +1563,16 @@
 
     // Visitor ID : cookie longue durée, SÉPARÉ du cookie consent
     // On ne le supprime JAMAIS lors du reset cookies (seul spv_consent est supprimé)
-    let visitorId = getCookie("spv_vid");
+    // Visitor ID: cookie + localStorage comme double backup (Safari ITP supprime les cookies)
+    let visitorId = getCookie("spv_vid") || localStorage.getItem("spv_vid");
     const isNew   = !visitorId;
     if(isNew){
       visitorId = uid();
-      // Durée 2 ans, résiste aux clics "Gérer les cookies"
-      const exp = new Date(); exp.setFullYear(exp.getFullYear()+2);
-      document.cookie = "spv_vid=" + visitorId + ";expires=" + exp.toUTCString() + ";path=/;SameSite=Lax";
     }
+    // Toujours rafraîchir les deux storages
+    const exp = new Date(); exp.setFullYear(exp.getFullYear()+2);
+    document.cookie = "spv_vid=" + visitorId + ";expires=" + exp.toUTCString() + ";path=/;SameSite=Lax";
+    try { localStorage.setItem("spv_vid", visitorId); } catch(e){}
 
     // UTM params
     const utmSource   = getParam("utm_source")   || sessionStorage.getItem("utm_source");
@@ -1597,15 +1631,20 @@
     });
     // visitId déjà défini avant l'INSERT — pas besoin de SELECT
 
-    // Scroll tracking
+    // Scroll tracking — fonctionne sur desktop et mobile
     let ticking = false;
     const updateScroll = () => {
       const el  = document.documentElement;
-      const pct = Math.round((window.scrollY / (el.scrollHeight - el.clientHeight)) * 100);
+      const total = el.scrollHeight - el.clientHeight;
+      const pct = total > 0 ? Math.min(100, Math.round((window.scrollY / total) * 100)) : 0;
       if(pct > scrollMax) scrollMax = pct;
       ticking = false;
     };
     window.addEventListener("scroll", ()=>{
+      if(!ticking){ requestAnimationFrame(updateScroll); ticking=true; }
+    }, {passive:true});
+    // iOS Safari: touchmove aussi
+    window.addEventListener("touchmove", ()=>{
       if(!ticking){ requestAnimationFrame(updateScroll); ticking=true; }
     }, {passive:true});
 
@@ -1625,10 +1664,11 @@
         body: JSON.stringify({ scroll_depth: scrollMax, time_on_page: secs })
       }).catch(()=>{});
     };
-    // Persist toutes les 5s (plus réactif)
-    setInterval(persist, 5000);
-
-    // Multiples événements de sortie pour couvrir tous les cas
+    // Persist toutes les 10s
+    setInterval(persist, 10000);
+    // Persist immédiatement après 3s (pour les visiteurs qui partent vite)
+    setTimeout(persist, 3000);
+    // Multiples événements de sortie
     window.addEventListener("beforeunload", persist);
     window.addEventListener("pagehide", persist);
     document.addEventListener("visibilitychange", ()=>{
