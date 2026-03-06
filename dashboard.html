@@ -625,6 +625,11 @@ function showPage(id, el){
   document.getElementById("page-"+id)?.classList.add("active");
   el?.classList.add("active");
   document.getElementById("topTitle").textContent = PAGE_TITLES[id] || id;
+  // Chart.js ne peut pas calculer les dimensions sur un élément caché
+  // → forcer resize après que la page soit visible
+  requestAnimationFrame(()=>{
+    Object.values(charts).forEach(c => { try{ c.resize(); }catch(e){} });
+  });
 }
 
 function setRange(days, el){
@@ -677,6 +682,11 @@ async function loadAll(){
   renderScroll(E);
   renderUTM(S, U);
   renderSources(S, E);
+
+  // Resize après rendu (pour pages actuellement actives)
+  requestAnimationFrame(()=>{
+    Object.values(charts).forEach(c => { try{ c.resize(); }catch(e){} });
+  });
 }
 
 // ── OVERVIEW ──────────────────────────────────────────
@@ -977,6 +987,40 @@ function renderSources(S, E){
       <td class="mono">${rate}</td>
     </tr>`;
   }).join("");
+
+  // sourceLineChart — évolution trafic par source dans le temps
+  const topSrc = labels.slice(0,4);
+  const dayKeys = []; const dayMap = {};
+  for(let i=currentRange-1;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const k=d.toISOString().split("T")[0];
+    dayKeys.push(k); dayMap[k]={};
+    topSrc.forEach(s=>{ dayMap[k][s]=0; });
+  }
+  S.forEach(s=>{
+    const k=s.started_at?.split("T")[0];
+    if(!k||!dayMap[k]) return;
+    let src="Direct";
+    if(s.utm_source) src=s.utm_source;
+    else if(s.referrer?.includes("google")) src="Google";
+    else if(s.referrer?.includes("facebook")) src="Facebook";
+    if(dayMap[k][src]!==undefined) dayMap[k][src]++;
+  });
+  const colors=["#1f3a8a","#22c55e","#f0cc4e","#fb923c"];
+  const datasets=topSrc.map((src,i)=>({
+    label:src, data:dayKeys.map(k=>dayMap[k][src]||0),
+    borderColor:colors[i], backgroundColor:colors[i]+"22",
+    tension:.3, fill:false, pointRadius:2
+  }));
+  destroyChart("sourceLineChart");
+  const ctx=document.getElementById("sourceLineChart");
+  if(ctx && datasets.length){
+    charts["sourceLineChart"]=new Chart(ctx,{
+      type:"line",
+      data:{ labels:dayKeys.map(k=>fmtShort(k)), datasets },
+      options:{ ...chartOpts(), plugins:{ legend:{ display:true, labels:{ color:"rgba(241,245,249,.5)", font:{family:"JetBrains Mono",size:10} } } } }
+    });
+  }
 }
 
 // ── UTM BUILDER ───────────────────────────────────────
