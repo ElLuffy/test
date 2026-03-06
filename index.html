@@ -1564,12 +1564,14 @@
     else if(/Linux/.test(ua)) os = "Linux";
 
     const hour  = new Date().getHours();
-    let visitId = null;
+    // Générer l'ID côté client pour éviter un SELECT après INSERT
+    let visitId = (crypto.randomUUID ? crypto.randomUUID() : uid());
     let scrollMax = 0;
     const startTime = Date.now();
 
     // Insert visit row
     sb.from("page_visits").insert({
+      id:           visitId,
       session_id:   sessionId,
       visitor_id:   visitorId,
       utm_source:   utmSource   || null,
@@ -1585,9 +1587,8 @@
       scroll_depth:  0,
       time_on_page:  0,
       form_submitted: false
-    }).select("id").single().then(({ data, error }) => {
-      if(!error && data) visitId = data.id;
     });
+    // visitId déjà défini avant l'INSERT — pas besoin de SELECT
 
     // Scroll tracking
     let ticking = false;
