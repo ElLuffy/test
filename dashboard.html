@@ -867,78 +867,109 @@ function renderConversion(S, E){
 
 // ── SCROLL & TEMPS ────────────────────────────────────
 function renderScroll(E, S){
-  const milestones = [25,50,75,100];
+  const totalSessions = S ? S.length : 1;
 
-  // Scroll : compter sessions uniques ayant atteint chaque milestone
-  const scrollCounts = milestones.map(m =>
-    new Set(
-      E.filter(e => e.event_name==="scroll" && parseMeta(e).milestone >= m)
-       .map(e => e.session_id)
-    ).size
-  );
-  // depthBars = div HTML avec barres de progression
+  // ── Profondeur max par session (non cumulative) ──
+  // On cherche le scroll max atteint PAR SESSION, pas par milestone
+  const sessionMax = {};
+  E.forEach(e=>{
+    if(!e.session_id) return;
+    let v = 0;
+    if(e.event_name==="page_view") v = e.scroll_depth || 0;
+    if(e.event_name==="scroll")    v = parseMeta(e).milestone || e.scroll_depth || 0;
+    if(v > (sessionMax[e.session_id]||0)) sessionMax[e.session_id] = v;
+  });
+  const maxVals = Object.values(sessionMax);
+
+  const depthDef = [
+    { label:"0–24%",  min:0,   max:24,       color:"rgba(255,255,255,.18)" },
+    { label:"25–49%", min:25,  max:49,        color:"#6b9ef8" },
+    { label:"50–74%", min:50,  max:74,        color:"#1f3a8a" },
+    { label:"75–99%", min:75,  max:99,        color:"#f0cc4e" },
+    { label:"100%",   min:100, max:Infinity,  color:"#22c55e" },
+  ];
+  depthDef.forEach(b=>{ b.count = maxVals.filter(v=>v>=b.min && v<=b.max).length; });
+  const dTotal = Math.max(totalSessions, 1);
+
   const depthBars = document.getElementById("depthBars");
   if(depthBars){
-    const maxSC = Math.max(...scrollCounts, 1);
-    depthBars.innerHTML = milestones.map((m,i)=>{
-      const pct = scrollCounts[i]; const bar = Math.round((pct/maxSC)*100);
-      const color = m<=25?"#6b9ef8":m<=50?"#1f3a8a":m<=75?"#f0cc4e":"#22c55e";
-      return `<div style="margin-bottom:.75rem">
-        <div style="display:flex;justify-content:space-between;margin-bottom:.3rem">
-          <span style="font-size:.72rem;color:var(--txt)">${m}%</span>
-          <span style="font-size:.72rem;font-family:var(--font-mono);color:var(--txt2)">${pct} session${pct>1?"s":""}</span>
-        </div>
-        <div style="background:rgba(255,255,255,.06);border-radius:4px;height:8px">
-          <div style="width:${bar}%;background:${color};height:8px;border-radius:4px;transition:width .5s"></div>
+    depthBars.innerHTML = depthDef.map(b=>{
+      const barW = Math.round((b.count/dTotal)*100);
+      return `<div style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <span style="font-size:.73rem;font-weight:600;color:var(--txt);width:58px">${b.label}</span>
+          <div style="flex:1;background:rgba(255,255,255,.06);border-radius:6px;height:12px;overflow:hidden">
+            <div style="width:${barW}%;background:${b.color};height:12px;border-radius:6px;transition:width .7s cubic-bezier(.34,1.56,.64,1)"></div>
+          </div>
+          <span style="font-size:.68rem;font-family:var(--font-mono);color:var(--txt3);width:90px;text-align:right">${b.count} sess. · ${barW}%</span>
         </div>
       </div>`;
     }).join("");
   }
 
-  // Temps sur page : depuis les events page_view avec time_on_page > 0
-  const pvTimes = E.filter(e=>e.event_name==="page_view" && e.time_on_page > 0).map(e=>e.time_on_page);
-  const timeBuckets = {"<30s":0,"30s-1m":0,"1-3m":0,"3-10m":0,">10m":0};
-  pvTimes.forEach(t=>{
-    if(t<30)       timeBuckets["<30s"]++;
-    else if(t<60)  timeBuckets["30s-1m"]++;
-    else if(t<180) timeBuckets["1-3m"]++;
-    else if(t<600) timeBuckets["3-10m"]++;
-    else           timeBuckets[">10m"]++;
-  });
-  buildChart("timeChart","bar",Object.keys(timeBuckets),Object.values(timeBuckets),"Sessions","#22c55e");
+  // ── Temps sur page — même style barres horizontales ──
+  const pvTimes = E.filter(e=>e.event_name==="page_view" && e.time_on_page>0).map(e=>e.time_on_page);
+  const timeDef = [
+    { label:"< 30s",  fn:t=>t<30,              color:"rgba(255,255,255,.18)" },
+    { label:"30s–1m", fn:t=>t>=30&&t<60,       color:"#6b9ef8" },
+    { label:"1–3m",   fn:t=>t>=60&&t<180,      color:"#1f3a8a" },
+    { label:"3–10m",  fn:t=>t>=180&&t<600,     color:"#f0cc4e" },
+    { label:"> 10m",  fn:t=>t>=600,            color:"#22c55e" },
+  ];
+  timeDef.forEach(b=>{ b.count = pvTimes.filter(b.fn).length; });
+  const tMax  = Math.max(...timeDef.map(b=>b.count), 1);
+  const tTot  = pvTimes.length || 1;
 
-  // ── Scroll moyen par source — utilise scroll_depth des page_view ──
+  // Cacher le canvas Chart.js et utiliser un div à la place
+  const tc = document.getElementById("timeChart");
+  if(tc) tc.style.display = "none";
+  let td = document.getElementById("timeBars");
+  if(!td){
+    td = document.createElement("div");
+    td.id = "timeBars";
+    td.style.cssText = "padding:.25rem 0";
+    if(tc) tc.parentElement.appendChild(td);
+  }
+  if(td){
+    td.innerHTML = timeDef.map(b=>{
+      const barW = Math.round((b.count/tMax)*100);
+      const pct  = Math.round((b.count/tTot)*100);
+      return `<div style="margin-bottom:1rem">
+        <div style="display:flex;align-items:center;gap:.75rem">
+          <span style="font-size:.73rem;font-weight:600;color:var(--txt);width:58px">${b.label}</span>
+          <div style="flex:1;background:rgba(255,255,255,.06);border-radius:6px;height:12px;overflow:hidden">
+            <div style="width:${barW}%;background:${b.color};height:12px;border-radius:6px;transition:width .7s cubic-bezier(.34,1.56,.64,1)"></div>
+          </div>
+          <span style="font-size:.68rem;font-family:var(--font-mono);color:var(--txt3);width:90px;text-align:right">${b.count} sess. · ${pct}%</span>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  // ── Scroll moyen par source ──
   if(S && S.length){
     const srcScroll = {};
     S.forEach(s=>{
       let src = "Direct";
-      if(s.utm_source) src = s.utm_source;
-      else if(s.referrer?.includes("google")) src = "Google";
+      if(s.utm_source)                          src = s.utm_source;
+      else if(s.referrer?.includes("google"))   src = "Google";
       else if(s.referrer?.includes("facebook")) src = "Facebook";
-      else if(s.referrer?.includes("instagram")) src = "Instagram";
-      if(!srcScroll[src]) srcScroll[src] = { sum:0, count:0 };
-      // scroll_depth sur les page_view (valeur finale persistée)
-      const pvEvents = E.filter(e=>e.session_id===s.session_id && e.event_name==="page_view");
-      // aussi regarder les events scroll pour les milestones
-      const scrollEvts = E.filter(e=>e.session_id===s.session_id && e.event_name==="scroll");
-      let maxScroll = 0;
-      if(pvEvents.length)   maxScroll = Math.max(maxScroll, ...pvEvents.map(e=>e.scroll_depth||0));
-      if(scrollEvts.length){
-        scrollEvts.forEach(e=>{
-          const m = parseMeta(e).milestone || e.scroll_depth || 0;
-          if(m > maxScroll) maxScroll = m;
-        });
-      }
-      srcScroll[src].sum   += maxScroll;
-      srcScroll[src].count += 1;
+      else if(s.referrer?.includes("instagram"))src = "Instagram";
+      if(!srcScroll[src]) srcScroll[src] = { sum:0, n:0 };
+      const pvE  = E.filter(e=>e.session_id===s.session_id && e.event_name==="page_view");
+      const scE  = E.filter(e=>e.session_id===s.session_id && e.event_name==="scroll");
+      let mx = 0;
+      pvE.forEach(e=>{ if((e.scroll_depth||0)>mx) mx=e.scroll_depth; });
+      scE.forEach(e=>{ const m=parseMeta(e).milestone||e.scroll_depth||0; if(m>mx) mx=m; });
+      srcScroll[src].sum += mx;
+      srcScroll[src].n   += 1;
     });
-    const srcLabels = Object.keys(srcScroll).filter(k=>srcScroll[k].count>0);
-    const srcAvgs   = srcLabels.map(k=>Math.round(srcScroll[k].sum/srcScroll[k].count));
-    if(srcLabels.length){
-      buildChart("scrollSourceChart","bar",srcLabels,srcAvgs,"Scroll moyen %","#f0cc4e");
-    }
+    const srcLabels = Object.keys(srcScroll);
+    const srcAvgs   = srcLabels.map(k=>Math.round(srcScroll[k].sum/srcScroll[k].n));
+    if(srcLabels.length) buildChart("scrollSourceChart","bar",srcLabels,srcAvgs,"Scroll moyen %","#f0cc4e");
   }
 }
+
 
 // ── UTM ───────────────────────────────────────────────
 function renderUTM(S, links){
