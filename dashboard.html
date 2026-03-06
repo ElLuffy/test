@@ -464,19 +464,19 @@
 
       <!-- ── PAGE: SOURCES ── -->
       <div class="page" id="page-sources">
-        <div class="charts-row">
+        <div style="display:grid;grid-template-columns:280px 1fr;gap:1rem;margin-bottom:1rem;align-items:start">
           <div class="chart-card">
-            <div class="chart-header"><div><div class="chart-title">Sources de trafic</div><div class="chart-sub">Origine des visiteurs</div></div></div>
-            <canvas id="sourcePieChart" height="240"></canvas>
+            <div class="chart-header"><div><div class="chart-title">Répartition</div><div class="chart-sub">Sources de trafic</div></div></div>
+            <div style="padding:.5rem;max-width:260px;margin:0 auto"><canvas id="sourcePieChart"></canvas></div>
           </div>
           <div class="chart-card">
             <div class="chart-header"><div><div class="chart-title">Trafic par source</div><div class="chart-sub">Évolution dans le temps</div></div></div>
-            <canvas id="sourceLineChart" height="240"></canvas>
+            <canvas id="sourceLineChart" height="200"></canvas>
           </div>
         </div>
         <div class="table-card">
           <div class="table-header"><h3>Détail par source</h3></div>
-          <table><thead><tr><th>Source</th><th>Type</th><th>Visites</th><th>Part</th><th>Conversions</th><th>Scroll moyen</th></tr></thead>
+          <table><thead><tr><th>Source</th><th>Visites</th><th>Conversions</th><th>Taux</th></tr></thead>
           <tbody id="sourceTable"></tbody></table>
         </div>
       </div>
@@ -849,16 +849,20 @@ function renderConversion(S, E){
   const tbody = document.getElementById("formTable");
   if(!tbody) return;
   const convSessions = S.filter(s=>convSessIds.has(s.session_id));
+  if(convSessions.length === 0){
+    tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--txt3);font-size:.75rem">Aucun formulaire reçu sur la période</td></tr>`;
+    return;
+  }
   tbody.innerHTML = convSessions.slice(0,20).map(s=>{
-    const fe = formEvents.find(e=>e.session_id===s.session_id);
+    const fe    = formEvents.find(e=>e.session_id===s.session_id);
+    const isNew = !s.visitor_id; // approximation
     return `<tr>
-      <td class="mono" style="font-size:.65rem">${s.session_id?.slice(0,8)||"—"}</td>
-      <td>${sourceTag(s.utm_source)}</td>
-      <td>${s.utm_campaign||"—"}</td>
-      <td>${s.device_type||"—"}</td>
-      <td class="mono" style="font-size:.65rem">${fmtShort(fe?.created_at||s.started_at)}</td>
+      <td class="mono" style="font-size:.7rem">${fmtShort(fe?.created_at||s.started_at)}</td>
+      <td>${sourceTag(s.utm_source)}${s.utm_campaign?` <small style="color:var(--txt3)">${s.utm_campaign}</small>`:""}</td>
+      <td>${deviceIcon(s.device_type)} <span style="font-size:.72rem">${s.device_type||"—"}</span></td>
+      <td>${s.is_new_visitor ? '<span class="badge badge-blue">Nouveau</span>' : '<span style="color:var(--txt3);font-size:.7rem">Retour</span>'}</td>
     </tr>`;
-  }).join("") || `<tr><td colspan="5" class="empty-state">Aucune conversion sur la période</td></tr>`;
+  }).join("");
 }
 
 // ── SCROLL & TEMPS ────────────────────────────────────
@@ -903,7 +907,7 @@ function renderScroll(E, S){
   });
   buildChart("timeChart","bar",Object.keys(timeBuckets),Object.values(timeBuckets),"Sessions","#22c55e");
 
-  // ── Scroll moyen par source ──
+  // ── Scroll moyen par source — utilise scroll_depth des page_view ──
   if(S && S.length){
     const srcScroll = {};
     S.forEach(s=>{
@@ -913,15 +917,26 @@ function renderScroll(E, S){
       else if(s.referrer?.includes("facebook")) src = "Facebook";
       else if(s.referrer?.includes("instagram")) src = "Instagram";
       if(!srcScroll[src]) srcScroll[src] = { sum:0, count:0 };
-      // Trouver le scroll max de cette session dans les events
-      const sessEvents = E.filter(e=>e.session_id===s.session_id && e.event_name==="scroll");
-      const maxScroll  = sessEvents.length ? Math.max(...sessEvents.map(e=>parseMeta(e).milestone||0)) : 0;
+      // scroll_depth sur les page_view (valeur finale persistée)
+      const pvEvents = E.filter(e=>e.session_id===s.session_id && e.event_name==="page_view");
+      // aussi regarder les events scroll pour les milestones
+      const scrollEvts = E.filter(e=>e.session_id===s.session_id && e.event_name==="scroll");
+      let maxScroll = 0;
+      if(pvEvents.length)   maxScroll = Math.max(maxScroll, ...pvEvents.map(e=>e.scroll_depth||0));
+      if(scrollEvts.length){
+        scrollEvts.forEach(e=>{
+          const m = parseMeta(e).milestone || e.scroll_depth || 0;
+          if(m > maxScroll) maxScroll = m;
+        });
+      }
       srcScroll[src].sum   += maxScroll;
       srcScroll[src].count += 1;
     });
     const srcLabels = Object.keys(srcScroll).filter(k=>srcScroll[k].count>0);
     const srcAvgs   = srcLabels.map(k=>Math.round(srcScroll[k].sum/srcScroll[k].count));
-    buildChart("scrollSourceChart","bar",srcLabels,srcAvgs,"Scroll moyen %","#f0cc4e");
+    if(srcLabels.length){
+      buildChart("scrollSourceChart","bar",srcLabels,srcAvgs,"Scroll moyen %","#f0cc4e");
+    }
   }
 }
 
