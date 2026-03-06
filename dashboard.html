@@ -652,242 +652,209 @@ async function loadAll(){
   since.setDate(since.getDate() - currentRange);
   const iso = since.toISOString();
 
-  const [{ data: visits }, { data: utmLinks }] = await Promise.all([
-    sb.from("page_visits").select("*").gte("created_at", iso).order("created_at", { ascending: false }),
-    sb.from("utm_links").select("*").order("created_at", { ascending: false })
+  // Charger sessions + events + utm_links en parallèle
+  const [{ data: sessions }, { data: events }, { data: utmLinks }, { data: visitors }] = await Promise.all([
+    sb.from("sessions").select("*").gte("started_at", iso).order("started_at", { ascending: false }),
+    sb.from("events").select("*").gte("created_at", iso).order("created_at", { ascending: false }),
+    sb.from("utm_links").select("*").order("created_at", { ascending: false }),
+    sb.from("visitors").select("*").gte("first_seen", iso)
   ]);
 
-  const v = visits || [];
-  const u = utmLinks || [];
+  const S = sessions  || [];
+  const E = events    || [];
+  const U = utmLinks  || [];
+  const V = visitors  || [];
 
-  renderOverview(v);
-  renderVisitors(v);
-  renderConversion(v);
-  renderScroll(v);
-  renderUTM(v, u);
-  renderSources(v);
+  renderOverview(S, E, V);
+  renderVisitors(S, E, V);
+  renderConversion(S, E);
+  renderScroll(E);
+  renderUTM(S, U);
+  renderSources(S, E);
 }
 
 // ── OVERVIEW ──────────────────────────────────────────
-function renderOverview(v){
-  // Visiteurs uniques (par visitor_id) — pas juste le nb de lignes
-  const uniqueIds = new Set(v.map(x=>x.visitor_id).filter(Boolean));
-  const total   = uniqueIds.size || v.length; // fallback sur nb lignes si pas d'ID
-  const sessions = v.length; // nb de sessions totales
-  const forms   = v.filter(x => x.form_submitted).length;
-  const conv    = total > 0 ? ((forms/total)*100).toFixed(1) : 0;
-  const avgTime = v.length > 0 ? Math.round(v.reduce((a,x)=>a+(x.time_on_page||0),0)/v.length) : 0;
+function renderOverview(S, E, V){
+  // Visiteurs uniques dans la période
+  const uniqueVisitors = new Set(S.map(s=>s.visitor_id).filter(Boolean)).size || S.length;
+  // Nouveaux visiteurs
+  const newVisitors = V.filter(v=>v.is_new).length;
+  // Sessions totales
+  const totalSessions = S.length;
+  // Conversions (form_submit events)
+  const convertedSessions = new Set(
+    E.filter(e=>e.event_name==="form_submit").map(e=>e.session_id)
+  ).size;
+  const conv = totalSessions > 0 ? ((convertedSessions/totalSessions)*100).toFixed(1) : 0;
+  // Temps moyen sur page (events page_view avec time_on_page > 0)
+  const pvWithTime = E.filter(e=>e.event_name==="page_view" && e.time_on_page > 0);
+  const avgTime = pvWithTime.length > 0
+    ? Math.round(pvWithTime.reduce((a,e)=>a+(e.time_on_page||0),0)/pvWithTime.length) : 0;
 
-  document.getElementById("kpiVisitors").textContent = total.toLocaleString("fr-FR");
-  document.getElementById("kpiForms").textContent    = forms;
+  document.getElementById("kpiVisitors").textContent = uniqueVisitors.toLocaleString("fr-FR");
+  document.getElementById("kpiForms").textContent    = convertedSessions;
   document.getElementById("kpiConv").textContent     = conv + "%";
   document.getElementById("kpiTime").textContent     = avgTime < 60 ? avgTime+"s" : Math.floor(avgTime/60)+"m"+(avgTime%60)+"s";
 
-  // Traffic chart (daily)
+  // Delta placeholder
+  document.getElementById("kpiVDelta").textContent = `${totalSessions} sessions`;
+  document.getElementById("kpiVDelta").className   = "stat-delta delta-neu";
+  document.getElementById("kpiFDelta").textContent = `${newVisitors} nouveaux`;
+  document.getElementById("kpiFDelta").className   = "stat-delta delta-pos";
+  document.getElementById("kpiCDelta").textContent = `${convertedSessions} conv.`;
+  document.getElementById("kpiCDelta").className   = convertedSessions > 0 ? "stat-delta delta-pos" : "stat-delta delta-neu";
+
+  // Courbe de trafic journalière
   const days = {}; const labels = [];
   for(let i = currentRange-1; i >= 0; i--){
     const d = new Date(); d.setDate(d.getDate()-i);
     const k = d.toISOString().split("T")[0];
-    days[k] = 0;
-    labels.push(fmtShort(d));
+    days[k] = 0; labels.push(fmtShort(d));
   }
-  v.forEach(x => { const k = x.created_at?.split("T")[0]; if(k in days) days[k]++; });
-  buildChart("trafficChart", "line", labels, Object.values(days), "Visites", "#1f3a8a");
+  S.forEach(s => { const k = s.started_at?.split("T")[0]; if(k in days) days[k]++; });
+  buildChart("trafficChart","line",labels,Object.values(days),"Sessions","#1f3a8a");
 
   // Device donut
   const devCount = {};
-  v.forEach(x => { const d = x.device_type||"inconnu"; devCount[d] = (devCount[d]||0)+1; });
-  const devLabels = Object.keys(devCount);
-  const devData   = Object.values(devCount);
-  buildDoughnut("deviceChart", devLabels, devData, ["#1f3a8a","#22c55e","#f0cc4e","#fb923c"]);
-
-  // New vs Returning
-  const newV  = v.filter(x => x.is_new_visitor).length;
-  const retV  = v.filter(x => !x.is_new_visitor).length;
-  buildDoughnut("newReturnChart", ["Nouveaux","Retours"], [newV, retV], ["#2a4db5","#16a34a"]);
-
-  // Browsers
-  const brCount = {};
-  v.forEach(x => { const b = x.browser||"Autre"; brCount[b] = (brCount[b]||0)+1; });
-  const sorted = Object.entries(brCount).sort((a,b)=>b[1]-a[1]);
-  const bList = document.getElementById("browserList");
-  bList.innerHTML = sorted.map(([b,c])=>{
-    const pct = total > 0 ? Math.round(c/total*100) : 0;
-    return `<div style="padding:.4rem .5rem">
-      <div style="display:flex;justify-content:space-between;font-size:.78rem;margin-bottom:.3rem">
-        <span style="color:var(--txt)">${b}</span>
-        <span style="color:var(--txt2);font-family:var(--font-mono)">${pct}% <span style="color:var(--txt3)">(${c})</span></span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-    </div>`;
-  }).join("");
+  S.forEach(s => { const d = s.device_type||"inconnu"; devCount[d]=(devCount[d]||0)+1; });
+  buildDoughnut("deviceChart",Object.keys(devCount),Object.values(devCount),["#1f3a8a","#22c55e","#f0cc4e","#fb923c"]);
 }
 
 // ── VISITORS ──────────────────────────────────────────
-function renderVisitors(v){
-  // Heatmap
-  const hours = Array(24).fill(0);
-  v.forEach(x => { if(x.hour_of_visit != null) hours[x.hour_of_visit]++; });
-  const max = Math.max(...hours, 1);
-  const grid = document.getElementById("heatmapGrid");
-  const lbl  = document.getElementById("heatmapLabels");
-  grid.innerHTML = hours.map((c,h)=>{
-    const int = c/max;
-    const bg = int === 0 ? "rgba(255,255,255,.04)"
-      : `rgba(31,58,138,${0.15 + int*0.8})`;
-    return `<div class="hm-cell" style="background:${bg}" data-tip="${h}h : ${c} visite${c>1?'s':''}"></div>`;
-  }).join("");
-  lbl.innerHTML = hours.map((_,h)=>`<div class="hm-label">${h}h</div>`).join("");
+function renderVisitors(S, E, V){
+  // Nouveaux vs retour
+  const newSessions  = S.filter(s => V.find(v=>v.visitor_id===s.visitor_id && v.is_new)).length;
+  const backSessions = S.length - newSessions;
+  buildDoughnut("newRetChart",["Nouveaux","Retour"],[newSessions,backSessions],["#1f3a8a","#6b9ef8"]);
 
-  // Table
-  document.getElementById("visitorCount").textContent = `${v.length} visiteurs`;
+  // Top browsers
+  const bMap = {};
+  S.forEach(s=>{ if(s.browser){ bMap[s.browser]=(bMap[s.browser]||0)+1; }});
+  const bLabels = Object.keys(bMap).sort((a,b)=>bMap[b]-bMap[a]).slice(0,5);
+  buildChart("browserChart","bar",bLabels,bLabels.map(k=>bMap[k]),"Sessions","#1f3a8a");
+
+  // Heatmap 24h
+  const hours = Array(24).fill(0);
+  S.forEach(s=>{ if(s.hour_of_day != null) hours[s.hour_of_day]++; });
+  const hLabels = Array.from({length:24},(_,i)=>i+"h");
+  buildChart("hourChart","bar",hLabels,hours,"Sessions","#1f3a8a");
+
+  // Tableau 50 dernières sessions
   const tbody = document.getElementById("visitorTable");
-  if(v.length === 0){ tbody.innerHTML=`<tr><td colspan="7" class="empty-state">Aucun visiteur sur cette période</td></tr>`; return; }
-  tbody.innerHTML = v.slice(0,50).map(x => {
-    const src = sourceTag(x.utm_source || x.referrer);
+  if(!tbody) return;
+  tbody.innerHTML = S.slice(0,50).map(s=>{
+    const convd = E.some(e=>e.session_id===s.session_id && e.event_name==="form_submit");
     return `<tr>
-      <td class="mono">${fmtFull(x.created_at)}</td>
-      <td>${deviceIcon(x.device_type)} ${x.device_type||"—"}</td>
-      <td>${x.browser||"—"}</td>
-      <td>${src}</td>
-      <td>${x.is_new_visitor ? '<span class="badge badge-green">Nouveau</span>' : '<span class="badge badge-gray">Retour</span>'}</td>
-      <td>${x.form_submitted ? '<span class="badge badge-blue">✓ Oui</span>' : '<span style="color:var(--txt3);font-size:.72rem">Non</span>'}</td>
-      <td><span class="mono" style="color:${x.scroll_depth>75?'#4ade80':x.scroll_depth>40?'#f0cc4e':'var(--txt3)'}">${x.scroll_depth||0}%</span></td>
+      <td class="mono" style="color:var(--txt3);font-size:.65rem">${s.session_id?.slice(0,8)||"—"}</td>
+      <td>${deviceIcon(s.device_type)} ${s.device_type||"—"}</td>
+      <td>${s.browser||"—"}</td>
+      <td>${s.os||"—"}</td>
+      <td>${sourceTag(s.utm_source)}</td>
+      <td>${s.utm_campaign ? '<span class="badge badge-blue">'+s.utm_campaign+'</span>' : '<span style="color:var(--txt3)">—</span>'}</td>
+      <td>${convd ? '<span class="badge badge-green">✓ Conv.</span>' : '<span style="color:var(--txt3)">—</span>'}</td>
+      <td class="mono" style="font-size:.65rem">${fmtShort(s.started_at)}</td>
     </tr>`;
-  }).join("");
+  }).join("") || `<tr><td colspan="8" class="empty-state">Aucune session</td></tr>`;
 }
 
 // ── CONVERSION ────────────────────────────────────────
-function renderConversion(v){
-  const total = v.length;
-  const forms = v.filter(x => x.form_submitted);
-  const conv  = total > 0 ? ((forms.length/total)*100).toFixed(1) : 0;
-  document.getElementById("convForms").textContent    = forms.length;
-  document.getElementById("convVisitors").textContent = total;
-  document.getElementById("convRate").textContent     = conv + "%";
+function renderConversion(S, E){
+  const formEvents  = E.filter(e=>e.event_name==="form_submit");
+  const convSessIds = new Set(formEvents.map(e=>e.session_id));
+  const total       = S.length;
+  const conv        = convSessIds.size;
+  const rate        = total > 0 ? ((conv/total)*100).toFixed(1) : 0;
 
-  // Conversion chart
-  const days = {}; const labels = [];
-  for(let i=currentRange-1;i>=0;i--){
-    const d=new Date(); d.setDate(d.getDate()-i);
-    const k=d.toISOString().split("T")[0];
-    days[k]=0; labels.push(fmtShort(d));
-  }
-  forms.forEach(x=>{ const k=x.created_at?.split("T")[0]; if(k in days) days[k]++; });
-  buildChart("convChart","bar",labels,Object.values(days),"Formulaires","#16a34a");
+  // Funnel: sessions → page_view → scroll 50% → form_submit
+  const pvSess    = new Set(E.filter(e=>e.event_name==="page_view").map(e=>e.session_id)).size;
+  const sc50Sess  = new Set(E.filter(e=>e.event_name==="scroll"&&(e.metadata?.milestone>=50||(()=>{try{return JSON.parse(e.metadata||"{}").milestone>=50}catch(e){return false}})())).map(e=>e.session_id)).size;
+  buildChart("funnelChart","bar",
+    ["Sessions","Page vue","Scroll 50%","Conversion"],
+    [total, pvSess, sc50Sess, conv],
+    "Sessions","#1f3a8a"
+  );
 
-  // Funnel
-  const scrolledHalf = v.filter(x=>(x.scroll_depth||0)>=50).length;
-  const scrolledFull = v.filter(x=>(x.scroll_depth||0)>=80).length;
-  const funnel = document.getElementById("funnelView");
-  const steps = [
-    {label:"Visiteurs",val:total,color:"#1f3a8a"},
-    {label:"Scroll 50%+",val:scrolledHalf,color:"#2a4db5"},
-    {label:"Scroll 80%+",val:scrolledFull,color:"#c9a327"},
-    {label:"Formulaire",val:forms.length,color:"#16a34a"},
-  ];
-  funnel.innerHTML = steps.map((s,i)=>{
-    const pct = total > 0 ? Math.round(s.val/total*100) : 0;
-    return `<div style="margin-bottom:.8rem">
-      <div style="display:flex;justify-content:space-between;font-size:.75rem;margin-bottom:.3rem">
-        <span style="color:var(--txt);font-weight:600">${s.label}</span>
-        <span style="font-family:var(--font-mono);color:var(--txt2)">${s.val} <span style="color:var(--txt3)">(${pct}%)</span></span>
-      </div>
-      <div style="height:10px;background:rgba(255,255,255,.05);border-radius:999px;overflow:hidden">
-        <div style="height:100%;border-radius:999px;background:${s.color};width:${pct}%;transition:width 1s ease"></div>
-      </div>
-    </div>`;
-  }).join("");
-
-  // Form table
-  const tbody = document.getElementById("formTable");
-  tbody.innerHTML = forms.slice(0,30).map(x=>
-    `<tr><td class="mono">${fmtFull(x.created_at)}</td><td>${sourceTag(x.utm_source||x.referrer)}</td><td>${deviceIcon(x.device_type)} ${x.device_type||"—"}</td><td>${x.is_new_visitor?'<span class="badge badge-green">Nouveau</span>':'<span class="badge badge-gray">Retour</span>'}</td></tr>`
-  ).join("") || `<tr><td colspan="4" class="empty-state">Aucun formulaire sur cette période</td></tr>`;
+  // Tableau conversions
+  const tbody = document.getElementById("convTable");
+  if(!tbody) return;
+  const convSessions = S.filter(s=>convSessIds.has(s.session_id));
+  tbody.innerHTML = convSessions.slice(0,20).map(s=>{
+    const fe = formEvents.find(e=>e.session_id===s.session_id);
+    return `<tr>
+      <td class="mono" style="font-size:.65rem">${s.session_id?.slice(0,8)||"—"}</td>
+      <td>${sourceTag(s.utm_source)}</td>
+      <td>${s.utm_campaign||"—"}</td>
+      <td>${s.device_type||"—"}</td>
+      <td class="mono" style="font-size:.65rem">${fmtShort(fe?.created_at||s.started_at)}</td>
+    </tr>`;
+  }).join("") || `<tr><td colspan="5" class="empty-state">Aucune conversion sur la période</td></tr>`;
 }
 
-// ── SCROLL ────────────────────────────────────────────
-function renderScroll(v){
-  const milestones = [25,50,75,90,100];
-  const total = v.length || 1;
-  const bars = document.getElementById("depthBars");
-  bars.innerHTML = milestones.map(m=>{
-    const cnt = v.filter(x=>(x.scroll_depth||0)>=m).length;
-    const pct = Math.round(cnt/total*100);
-    const color = m<=25?"#1f3a8a":m<=50?"#2a4db5":m<=75?"#c9a327":m<=90?"#ea580c":"#16a34a";
-    return `<div class="depth-row">
-      <div class="depth-label">${m}%</div>
-      <div class="depth-bar-wrap"><div class="depth-bar" style="width:${pct}%;background:${color}"></div></div>
-      <div class="depth-pct" style="color:${color}">${pct}%</div>
-    </div>`;
-  }).join("");
+// ── SCROLL & TEMPS ────────────────────────────────────
+function renderScroll(E){
+  // Distribution scroll milestones
+  const milestones = [25,50,75,100];
+  const pvCount = E.filter(e=>e.event_name==="page_view").length || 1;
+  const scrollCounts = milestones.map(m =>
+    new Set(E.filter(e=>e.event_name==="scroll"&&((e.metadata?.milestone||JSON.parse(e.metadata||"{}").milestone||0)>=m)).map(e=>e.session_id)).size
+  );
+  buildChart("scrollChart","bar",
+    milestones.map(m=>m+"%"),scrollCounts,"Sessions","#1f3a8a"
+  );
 
-  // Time distribution
-  const buckets = {"<30s":0,"30s-2m":0,"2-5m":0,"5-15m":0,">15m":0};
-  v.forEach(x=>{
-    const t = x.time_on_page||0;
-    if(t<30) buckets["<30s"]++;
-    else if(t<120) buckets["30s-2m"]++;
-    else if(t<300) buckets["2-5m"]++;
-    else if(t<900) buckets["5-15m"]++;
-    else buckets[">15m"]++;
+  // Distribution temps
+  const pvTimes = E.filter(e=>e.event_name==="page_view" && e.time_on_page > 0).map(e=>e.time_on_page);
+  const timeBuckets = {"<30s":0,"30s-1m":0,"1-3m":0,"3-10m":0,">10m":0};
+  pvTimes.forEach(t=>{
+    if(t<30) timeBuckets["<30s"]++;
+    else if(t<60) timeBuckets["30s-1m"]++;
+    else if(t<180) timeBuckets["1-3m"]++;
+    else if(t<600) timeBuckets["3-10m"]++;
+    else timeBuckets[">10m"]++;
   });
-  buildChart("timeChart","bar",Object.keys(buckets),Object.values(buckets),"Visiteurs","#c9a327");
-
-  // Scroll by source
-  const srcScroll = {};
-  v.forEach(x=>{
-    const s = x.utm_source || (x.referrer ? "referral" : "direct");
-    if(!srcScroll[s]) srcScroll[s]={sum:0,cnt:0};
-    srcScroll[s].sum += x.scroll_depth||0;
-    srcScroll[s].cnt++;
-  });
-  const ssLabels = Object.keys(srcScroll);
-  const ssData   = ssLabels.map(s=>Math.round(srcScroll[s].sum/srcScroll[s].cnt));
-  buildChart("scrollSourceChart","bar",ssLabels,ssData,"Scroll moyen %","#2a4db5");
+  buildChart("timeChart","bar",Object.keys(timeBuckets),Object.values(timeBuckets),"Sessions","#22c55e");
 }
 
 // ── UTM ───────────────────────────────────────────────
-function renderUTM(v, links){
-  // Match visite → lien par source + campaign (exact match)
-  const key = (src, camp) => (src||"") + "|" + (camp||"");
-  const campVisits = {}; const campConv = {};
-  v.forEach(x=>{
-    if(x.utm_source || x.utm_campaign){
-      const k = key(x.utm_source, x.utm_campaign);
-      campVisits[k] = (campVisits[k]||0)+1;
-      if(x.form_submitted) campConv[k]=(campConv[k]||0)+1;
+function renderUTM(S, links){
+  // Clé de matching: source + campaign
+  const key = (src,camp) => (src||"")+"|"+(camp||"");
+  const campSessions = {}; const campConv = {};
+  S.forEach(s=>{
+    if(s.utm_source||s.utm_campaign){
+      const k = key(s.utm_source,s.utm_campaign);
+      campSessions[k]=(campSessions[k]||0)+1;
+      if(s.converted) campConv[k]=(campConv[k]||0)+1;
     }
   });
 
-  // UTM performance chart — top campagnes
+  // Graphique top campagnes
   const chartData = links.map(l=>({
-    label: l.name || l.utm_campaign,
-    value: campVisits[key(l.utm_source, l.utm_campaign)] || 0
+    label: l.name||l.utm_campaign||"—",
+    value: campSessions[key(l.utm_source,l.utm_campaign)]||0
   })).filter(x=>x.value>0).sort((a,b)=>b.value-a.value).slice(0,8);
-
-  if(chartData.length > 0){
-    buildChart("utmChart","bar",chartData.map(x=>x.label),chartData.map(x=>x.value),"Visites","#1f3a8a");
+  if(chartData.length>0){
+    buildChart("utmChart","bar",chartData.map(x=>x.label),chartData.map(x=>x.value),"Sessions","#1f3a8a");
   }
 
-  // Links table
+  // Table liens
   document.getElementById("utmLinkCount").textContent = `${links.length} lien${links.length>1?"s":""}`;
   const tbody = document.getElementById("utmTable");
   if(links.length===0){
-    tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state"><svg viewBox="0 0 24 24"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>Aucun lien généré pour l'instant</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="7"><div class="empty-state">Aucun lien généré</div></td></tr>`;
     return;
   }
   tbody.innerHTML = links.map(l=>{
-    const k = key(l.utm_source, l.utm_campaign);
-    const visits = campVisits[k] || 0;
-    const convs  = campConv[k] || 0;
-    const rate   = visits > 0 ? ((convs/visits)*100).toFixed(0) + "%" : "—";
+    const k = key(l.utm_source,l.utm_campaign);
+    const visits = campSessions[k]||0;
+    const convs  = campConv[k]||0;
+    const rate   = visits>0?((convs/visits)*100).toFixed(0)+"%":"—";
     return `<tr>
       <td style="font-weight:600;color:var(--txt)">${l.name||"—"}</td>
       <td>${sourceTag(l.utm_source)}</td>
       <td><span class="mono" style="color:var(--txt2)">${l.utm_campaign||"—"}</span></td>
-      <td><span style="font-family:var(--font-mono);font-weight:700;color:${visits>0?'#6b9ef8':'var(--txt3)'}">${visits}</span></td>
-      <td><span style="font-family:var(--font-mono);color:${convs>0?'#4ade80':'var(--txt3)'}">${convs} <small style="opacity:.5">${rate}</small></span></td>
+      <td><span style="font-family:var(--font-mono);font-weight:700;color:${visits>0?"#6b9ef8":"var(--txt3)"}">${visits}</span></td>
+      <td><span style="font-family:var(--font-mono);color:${convs>0?"#4ade80":"var(--txt3)"}">${convs} <small style="opacity:.5">${rate}</small></span></td>
       <td class="mono">${fmtShort(l.created_at)}</td>
       <td><button class="btn-sec" style="padding:.25rem .6rem;font-size:.65rem" onclick="copyLink('${escapeAttr(l.full_url)}')">Copier</button></td>
     </tr>`;
@@ -895,64 +862,36 @@ function renderUTM(v, links){
 }
 
 // ── SOURCES ───────────────────────────────────────────
-function renderSources(v){
+function renderSources(S, E){
   const srcMap = {};
-  v.forEach(x=>{
-    let s = "Direct";
-    if(x.utm_source) s = x.utm_source;
-    else if(x.referrer && x.referrer.includes("google")) s = "google";
-    else if(x.referrer && x.referrer.includes("facebook")) s = "facebook";
-    else if(x.referrer && x.referrer !== "") s = "referral";
-    if(!srcMap[s]) srcMap[s]={visits:0,conv:0,scrollSum:0};
-    srcMap[s].visits++;
-    if(x.form_submitted) srcMap[s].conv++;
-    srcMap[s].scrollSum += (x.scroll_depth||0);
+  S.forEach(s=>{
+    let src = "Direct";
+    if(s.utm_source) src = s.utm_source;
+    else if(s.referrer && s.referrer.includes("google")) src = "google";
+    else if(s.referrer && s.referrer.includes("facebook")) src = "facebook";
+    else if(s.referrer && s.referrer !== "") src = "referral";
+    if(!srcMap[src]) srcMap[src]={visits:0,conv:0};
+    srcMap[src].visits++;
+    if(s.converted) srcMap[src].conv++;
   });
 
-  const entries = Object.entries(srcMap).sort((a,b)=>b[1].visits-a[1].visits);
-  const total = v.length || 1;
-  const colors = ["#1f3a8a","#16a34a","#c9a327","#ea580c","#8b5cf6","#06b6d4","#f43f5e"];
+  const labels  = Object.keys(srcMap).sort((a,b)=>srcMap[b].visits-srcMap[a].visits);
+  const values  = labels.map(k=>srcMap[k].visits);
+  buildDoughnut("sourceChart",labels,values,["#1f3a8a","#22c55e","#f0cc4e","#fb923c","#a855f7","#14b8a6"]);
 
-  buildDoughnut("sourcePieChart", entries.map(e=>e[0]), entries.map(e=>e[1].visits), colors);
-
-  // Source line over time
-  const top3 = entries.slice(0,3).map(e=>e[0]);
-  const dayKeys = [];
-  for(let i=currentRange-1;i>=0;i--){
-    const d=new Date(); d.setDate(d.getDate()-i);
-    dayKeys.push(d.toISOString().split("T")[0]);
-  }
-  const datasets = top3.map((src,i)=>{
-    const vals = dayKeys.map(k=>
-      v.filter(x=>x.created_at?.startsWith(k) && (x.utm_source===src || (!x.utm_source && src==="Direct"))).length
-    );
-    return { label:src, data:vals, borderColor:colors[i], backgroundColor:"transparent", tension:.4, pointRadius:3 };
-  });
-  destroyChart("sourceLineChart");
-  charts["sourceLineChart"] = new Chart(document.getElementById("sourceLineChart"), {
-    type:"line",
-    data:{ labels:dayKeys.map(k=>fmtShort(k+"T00:00:00")), datasets },
-    options:chartOpts()
-  });
-
-  // Source table
+  // Tableau sources
   const tbody = document.getElementById("sourceTable");
-  tbody.innerHTML = entries.map(([s, d])=>{
-    const pct  = Math.round(d.visits/total*100);
-    const avgS = d.visits > 0 ? Math.round(d.scrollSum/d.visits) : 0;
-    const sType = s==="Direct"?"direct":["google"].includes(s)?"organic":["facebook","instagram"].includes(s)?"social":"referral";
+  if(!tbody) return;
+  tbody.innerHTML = labels.map(src=>{
+    const d = srcMap[src];
+    const rate = d.visits>0?((d.conv/d.visits)*100).toFixed(1)+"%":"0%";
     return `<tr>
-      <td style="font-weight:600;color:var(--txt)">${s}</td>
-      <td>${sourceTag(sType)}</td>
-      <td><span class="mono">${d.visits}</span></td>
-      <td>
-        <span class="mono">${pct}%</span>
-        <div class="progress-bar" style="margin-top:.3rem;width:80px"><div class="progress-fill" style="width:${pct}%"></div></div>
-      </td>
-      <td><span class="mono" style="color:${d.conv>0?'#4ade80':'var(--txt3)'}">${d.conv}</span></td>
-      <td><span class="mono" style="color:${avgS>60?'#4ade80':avgS>30?'#f0cc4e':'var(--txt3)'}">${avgS}%</span></td>
+      <td>${sourceTag(src)}</td>
+      <td style="font-family:var(--font-mono);font-weight:700">${d.visits}</td>
+      <td style="font-family:var(--font-mono);color:${d.conv>0?"#4ade80":"var(--txt3)"}">${d.conv}</td>
+      <td class="mono">${rate}</td>
     </tr>`;
-  }).join("") || `<tr><td colspan="6" class="empty-state">Aucune donnée</td></tr>`;
+  }).join("") || `<tr><td colspan="4" class="empty-state">Aucune donnée</td></tr>`;
 }
 
 // ── UTM BUILDER ───────────────────────────────────────
@@ -961,9 +900,12 @@ function updateUTMPreview(){
   const source   = document.getElementById("utmSource")?.value || "";
   const medium   = document.getElementById("utmMedium")?.value || "";
   const campaign = document.getElementById("utmCampaign")?.value || "";
+  const content  = document.getElementById("utmContent")?.value || "";
   let url = base + "?utm_source=" + source + "&utm_medium=" + medium;
   if(campaign) url += "&utm_campaign=" + encodeURIComponent(campaign);
-  document.getElementById("utmPreview").textContent = url;
+  if(content)  url += "&utm_content="  + encodeURIComponent(content);
+  const prev = document.getElementById("utmPreview");
+  if(prev) prev.textContent = url;
   return url;
 }
 
@@ -972,12 +914,12 @@ async function saveUtmLink(){
   const source   = document.getElementById("utmSource").value;
   const medium   = document.getElementById("utmMedium").value;
   const campaign = document.getElementById("utmCampaign").value.trim();
+  const content  = document.getElementById("utmContent")?.value || "";
   const url      = updateUTMPreview();
-
-  if(!name || !campaign){ alert("Remplis le nom et la campagne."); return; }
-
+  if(!name||!campaign){ alert("Remplis le nom et la campagne."); return; }
   const { error } = await sb.from("utm_links").insert({
-    name, utm_source:source, utm_medium:medium, utm_campaign:campaign, full_url:url
+    name, utm_source:source, utm_medium:medium, utm_campaign:campaign,
+    utm_content:content||null, full_url:url
   });
   if(!error){
     showToast("Lien sauvegardé !");
@@ -1005,7 +947,7 @@ function showToast(msg){
 // ── CSV EXPORT ────────────────────────────────────────
 async function exportCSV(){
   const since = new Date(); since.setDate(since.getDate()-currentRange);
-  const { data:v } = await sb.from("page_visits").select("*").gte("created_at",since.toISOString());
+  const { data:v } = await sb.from("sessions").select("*").gte("started_at",since.toISOString());
   if(!v||!v.length){ alert("Aucune donnée à exporter."); return; }
 
   const cols = ["created_at","device_type","browser","os","utm_source","utm_medium","utm_campaign","referrer","scroll_depth","time_on_page","is_new_visitor","form_submitted"];
