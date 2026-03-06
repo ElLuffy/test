@@ -1806,21 +1806,31 @@
       sbPatch("sessions", `session_id=eq.${sessionId}`, { converted: true, converted_at: t });
     };
 
-    // 7. CTA click tracking
+    // 7. CTA click tracking — phone, whatsapp, email, devis
     document.addEventListener("click", function(e){
-      const el = e.target.closest("a[href^='tel:'], a[href^='https://wa.me'], .btn-primary, .btn-whatsapp");
+      const el = e.target.closest([
+        "a[href^='tel:']",
+        "a[href^='https://wa.me']",
+        "a[href^='mailto:']",
+        "#emailLink", "#emailLinkHero", "#emailLinkFooterCol",
+        ".btn-whatsapp",
+        ".fab-btn",
+        ".contact-item"
+      ].join(","));
       if(!el) return;
-      let ctaType = "other";
       const href = el.getAttribute("href")||"";
-      if(href.startsWith("tel:")) ctaType = "phone";
-      else if(href.includes("wa.me")) ctaType = "whatsapp";
+      let ctaType = "other";
+      if(href.startsWith("tel:") || el.classList.contains("fab-phone")) ctaType = "phone";
+      else if(href.includes("wa.me") || el.classList.contains("fab-whatsapp") || el.classList.contains("btn-whatsapp")) ctaType = "whatsapp";
+      else if(href.startsWith("mailto:") || el.id?.includes("email") || el.id?.includes("Email")) ctaType = "email";
+      if(ctaType === "other") return; // ignorer les autres clics
       sbInsert("events", {
         id:         uuid(),
         session_id: sessionId,
         event_name: "cta_click",
         page_url:   location.href,
         created_at: new Date().toISOString(),
-        metadata:   { type: ctaType, text: el.textContent.trim().slice(0,50) }
+        metadata:   { type: ctaType, text: el.textContent.trim().slice(0,40) }
       });
     }, { passive:true });
 
