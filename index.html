@@ -153,9 +153,6 @@
       display:flex;align-items:center;justify-content:center;
     }
     .zone-map-visual canvas{width:100%;height:100%;display:block}
-    @media(max-width:768px){
-      .zone-map-visual canvas{ pointer-events:none; }
-    }
     .zone-dept-number{
       position:absolute;top:1rem;right:1.2rem;z-index:3;
       font-family:var(--font-title);font-weight:900;font-size:2.8rem;
@@ -1363,22 +1360,43 @@
     setHovered(null);
   });
   // Touch support — hover on touch
-  // Sur mobile : pas d'interaction directe sur la carte (utiliser les boutons)
-  // Sur desktop : clic sur un point affiche le tooltip
-  if(!isTouchDevice){
-    renderer.domElement.addEventListener("click", ev => {
-      const rect = renderer.domElement.getBoundingClientRect();
-      mouse.x = ((ev.clientX - rect.left) / rect.width)  *  2 - 1;
-      mouse.y = ((ev.clientY - rect.top)  / rect.height) * -2 + 1;
-      const targets = cityMeshes.flatMap(o => [o.dot, o.hitbox].filter(Boolean));
-      raycaster.setFromCamera(mouse, camera);
-      const hits = raycaster.intersectObjects(targets, false);
-      if(hits.length){
-        const obj = cityMeshes.find(o => o.dot === hits[0].object || o.hitbox === hits[0].object);
-        if(obj) pinCity(obj);
-      }
-    });
-  }
+  // Touch support — hover on touch
+  renderer.domElement.addEventListener("touchmove", ev => {
+    ev.preventDefault();
+    const t = ev.touches[0];
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((t.clientX - rect.left) / rect.width)  *  2 - 1;
+    mouse.y = ((t.clientY - rect.top)  / rect.height) * -2 + 1;
+  }, { passive: false });
+  renderer.domElement.addEventListener("touchend", ev => {
+    const t = ev.changedTouches[0];
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((t.clientX - rect.left) / rect.width)  *  2 - 1;
+    mouse.y = ((t.clientY - rect.top)  / rect.height) * -2 + 1;
+    raycaster.setFromCamera(mouse, camera);
+    const targets = cityMeshes.flatMap(o => [o.dot, o.hitbox].filter(Boolean));
+    const hits = raycaster.intersectObjects(targets, false);
+    if(hits.length){
+      const obj = cityMeshes.find(o => o.dot === hits[0].object || o.hitbox === hits[0].object);
+      if(obj) pinCity(obj);
+    } else {
+      mouse.set(999, 999);
+      setHovered(null);
+    }
+  });
+  // Click on desktop city dots
+  renderer.domElement.addEventListener("click", ev => {
+    const rect = renderer.domElement.getBoundingClientRect();
+    mouse.x = ((ev.clientX - rect.left) / rect.width)  *  2 - 1;
+    mouse.y = ((ev.clientY - rect.top)  / rect.height) * -2 + 1;
+    const targets = cityMeshes.flatMap(o => [o.dot, o.hitbox].filter(Boolean));
+    raycaster.setFromCamera(mouse, camera);
+    const hits = raycaster.intersectObjects(targets, false);
+    if(hits.length){
+      const obj = cityMeshes.find(o => o.dot === hits[0].object || o.hitbox === hits[0].object);
+      if(obj) pinCity(obj);
+    }
+  });
 
   // ── City tag click → highlight on map ──────────────────────
   let tagTimer = null;
