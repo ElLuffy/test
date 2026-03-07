@@ -395,24 +395,71 @@
 
       <!-- ── PAGE: VISITORS ── -->
       <div class="page" id="page-visitors">
+        <!-- HEURES DE POINTE : deux vues -->
         <div class="chart-card full-row">
-          <div class="chart-header" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem">
+          <div class="chart-header" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.6rem">
             <div>
               <div class="chart-title">Heures de pointe</div>
-              <div class="chart-sub" id="heatmapSub">Visites par heure sur les 24 dernières heures</div>
+              <div class="chart-sub" id="heatmapSub">Distribution par heure et par jour</div>
             </div>
-            <div class="date-range" style="margin:0">
-              <button class="date-btn" id="hm-1"   onclick="setHeatmapRange(1,this)">1h</button>
-              <button class="date-btn" id="hm-6"   onclick="setHeatmapRange(6,this)">6h</button>
-              <button class="date-btn" id="hm-12"  onclick="setHeatmapRange(12,this)">12h</button>
-              <button class="date-btn active" id="hm-24" onclick="setHeatmapRange(24,this)">24h</button>
-              <button class="date-btn" id="hm-48"  onclick="setHeatmapRange(48,this)">48h</button>
-              <button class="date-btn" id="hm-72"  onclick="setHeatmapRange(72,this)">72h</button>
-              <button class="date-btn" id="hm-168" onclick="setHeatmapRange(168,this)">7j</button>
+            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+              <div class="date-range" style="margin:0">
+                <button class="date-btn" id="hm-24"  onclick="setHeatmapRange(24,this)">24h</button>
+                <button class="date-btn" id="hm-48"  onclick="setHeatmapRange(48,this)">48h</button>
+                <button class="date-btn" id="hm-72"  onclick="setHeatmapRange(72,this)">72h</button>
+                <button class="date-btn" id="hm-168" onclick="setHeatmapRange(168,this)">7j</button>
+                <button class="date-btn" id="hm-336" onclick="setHeatmapRange(336,this)">14j</button>
+                <button class="date-btn active" id="hm-0" onclick="setHeatmapRange(0,this)">Tout</button>
+              </div>
             </div>
           </div>
-          <div class="heatmap-grid" id="heatmapGrid"></div>
-          <div class="hm-labels" id="heatmapLabels"></div>
+
+          <!-- Vue 1 : Heatmap jour × heure -->
+          <div style="margin-top:.8rem">
+            <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:.5rem">Patterns hebdomadaires — heure × jour</div>
+            <div style="display:flex;gap:6px">
+              <div style="display:flex;flex-direction:column;gap:3px;justify-content:space-around;padding-top:22px">
+                <span style="font-size:.58rem;color:var(--txt3);width:22px;text-align:right">Lun</span>
+                <span style="font-size:.58rem;color:var(--txt3);width:22px;text-align:right">Mar</span>
+                <span style="font-size:.58rem;color:var(--txt3);width:22px;text-align:right">Mer</span>
+                <span style="font-size:.58rem;color:var(--txt3);width:22px;text-align:right">Jeu</span>
+                <span style="font-size:.58rem;color:var(--txt3);width:22px;text-align:right">Ven</span>
+                <span style="font-size:.58rem;color:var(--txt3);width:22px;text-align:right">Sam</span>
+                <span style="font-size:.58rem;color:var(--txt3);width:22px;text-align:right">Dim</span>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:3px">
+                <!-- Labels heures -->
+                <div style="display:grid;grid-template-columns:repeat(24,1fr);gap:2px;margin-bottom:2px">
+                  <div style="grid-column:1;font-size:.55rem;color:var(--txt3)">0h</div>
+                  <div style="grid-column:4;font-size:.55rem;color:var(--txt3)">3h</div>
+                  <div style="grid-column:7;font-size:.55rem;color:var(--txt3)">6h</div>
+                  <div style="grid-column:10;font-size:.55rem;color:var(--txt3)">9h</div>
+                  <div style="grid-column:13;font-size:.55rem;color:var(--txt3)">12h</div>
+                  <div style="grid-column:16;font-size:.55rem;color:var(--txt3)">15h</div>
+                  <div style="grid-column:19;font-size:.55rem;color:var(--txt3)">18h</div>
+                  <div style="grid-column:22;font-size:.55rem;color:var(--txt3)">21h</div>
+                </div>
+                <div id="heatmapDayGrid"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vue 2 : Timeline bar chart par heure (toutes heures confondues) -->
+          <div style="margin-top:1.4rem">
+            <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--txt3);margin-bottom:.6rem">Volume total par tranche horaire</div>
+            <div id="heatmapBars" style="display:flex;align-items:flex-end;gap:2px;height:60px"></div>
+            <div style="display:flex;justify-content:space-between;padding-top:.3rem">
+              <span style="font-size:.58rem;color:var(--txt3)">0h</span>
+              <span style="font-size:.58rem;color:var(--txt3)">3h</span>
+              <span style="font-size:.58rem;color:var(--txt3)">6h</span>
+              <span style="font-size:.58rem;color:var(--txt3)">9h</span>
+              <span style="font-size:.58rem;color:var(--txt3)">12h</span>
+              <span style="font-size:.58rem;color:var(--txt3)">15h</span>
+              <span style="font-size:.58rem;color:var(--txt3)">18h</span>
+              <span style="font-size:.58rem;color:var(--txt3)">21h</span>
+              <span style="font-size:.58rem;color:var(--txt3)">23h</span>
+            </div>
+          </div>
         </div>
         <div class="table-card">
           <div class="table-header"><h3>Derniers visiteurs</h3><span style="font-size:.7rem;color:var(--txt3)" id="visitorCount"></span></div>
@@ -482,7 +529,7 @@
           </div>
           <div class="chart-card">
             <div class="chart-header"><div><div class="chart-title">Temps sur le site</div><div class="chart-sub">Distribution des durées de session</div></div></div>
-            <div id="timeBars" style="padding:.25rem 0"></div>
+            <div class="depth-bars" id="timeBars"></div>
           </div>
         </div>
         <div class="chart-card full-row">
@@ -721,44 +768,79 @@ function setHeatmapRange(hours, el){
   window._heatmapHours = hours;
   document.querySelectorAll("[id^='hm-']").forEach(b=>b.classList.remove("active"));
   if(el) el.classList.add("active");
-  const sub = document.getElementById("heatmapSub");
-  if(sub) sub.textContent = `Visites par heure sur les ${hours} dernières heures`;
   renderHeatmap(hours);
 }
 
 function renderHeatmap(limitHours){
   const S = window._allSessions || [];
-  const grid = document.getElementById("heatmapGrid");
-  const lbls = document.getElementById("heatmapLabels");
-  if(!grid) return;
 
-  const now = new Date();
-  const cutoff = new Date(now.getTime() - limitHours * 3600000);
+  // Filtrer selon la plage
+  let filtered;
+  if(!limitHours || limitHours === 0){
+    filtered = S; // tout
+  } else {
+    const cutoff = new Date(Date.now() - limitHours * 3600000);
+    filtered = S.filter(s => s.started_at && new Date(s.started_at) >= cutoff);
+  }
 
-  // Filter sessions within window
-  const filtered = S.filter(s => {
-    if(!s.started_at) return false;
-    return new Date(s.started_at) >= cutoff;
-  });
-
-  // Build 24 slots (real hours 0–23, not relative)
-  const hours = Array(24).fill(0);
+  // ── VUE 1 : Heatmap 7 jours × 24 heures ──
+  // grid[dayOfWeek(0=Lun)][hour] = count
+  const grid = Array.from({length:7}, ()=>Array(24).fill(0));
   filtered.forEach(s => {
-    const h = s.hour_of_day;
-    if(h != null && h >= 0 && h < 24) hours[h]++;
+    if(!s.started_at) return;
+    const d = new Date(s.started_at);
+    const dow = (d.getDay() + 6) % 7; // 0=Lun, 6=Dim
+    const h = d.getHours();
+    grid[dow][h]++;
   });
+  const allVals = grid.flat();
+  const gMax = Math.max(...allVals, 1);
 
-  const hMax = Math.max(...hours, 1);
-  grid.innerHTML = hours.map((v, i) => {
-    const pct = v / hMax;
-    const bg = pct > 0.7 ? "#f0cc4e" : pct > 0.4 ? "#1f3a8a" : pct > 0.1 ? "rgba(31,58,138,.4)" : "rgba(255,255,255,.04)";
-    return `<div title="${i}h : ${v} session${v>1?"s":""}" style="background:${bg};border-radius:3px;aspect-ratio:1;transition:transform .15s;cursor:default" onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'"></div>`;
-  }).join("");
+  const dayGridEl = document.getElementById("heatmapDayGrid");
+  if(dayGridEl){
+    dayGridEl.style.cssText = "display:flex;flex-direction:column;gap:3px";
+    dayGridEl.innerHTML = grid.map(rowCounts => {
+      const cells = rowCounts.map((v,h) => {
+        const pct = v / gMax;
+        const bg = pct > 0.75 ? "#f0cc4e"
+                 : pct > 0.5  ? "#1f3a8a"
+                 : pct > 0.25 ? "rgba(31,58,138,.45)"
+                 : pct > 0    ? "rgba(31,58,138,.18)"
+                 :               "rgba(255,255,255,.04)";
+        const DAYS = ["Lun","Mar","Mer","Jeu","Ven","Sam","Dim"];
+        return `<div title="${h}h : ${v} session${v>1?"s":""}" style="background:${bg};border-radius:2px;height:14px;cursor:default;transition:opacity .15s" onmouseenter="this.style.opacity='.7'" onmouseleave="this.style.opacity='1'"></div>`;
+      }).join("");
+      return `<div style="display:grid;grid-template-columns:repeat(24,1fr);gap:2px">${cells}</div>`;
+    }).join("");
+  }
 
-  if(lbls){
-    lbls.innerHTML = [0,3,6,9,12,15,18,21,23].map(h =>
-      `<span style="font-size:.6rem;color:var(--txt3)">${h}h</span>`
-    ).join("");
+  // ── VUE 2 : Bars par tranche horaire (toutes sessions) ──
+  const hourTotals = Array(24).fill(0);
+  filtered.forEach(s => {
+    if(!s.started_at) return;
+    hourTotals[new Date(s.started_at).getHours()]++;
+  });
+  const hMax = Math.max(...hourTotals, 1);
+
+  const barsEl = document.getElementById("heatmapBars");
+  if(barsEl){
+    barsEl.innerHTML = hourTotals.map((v,i) => {
+      const pct = v / hMax;
+      const h = Math.max(2, Math.round(pct * 60));
+      const bg = pct > 0.7 ? "#f0cc4e" : pct > 0.4 ? "#1f3a8a" : pct > 0.1 ? "rgba(31,58,138,.5)" : "rgba(255,255,255,.05)";
+      return `<div style="flex:1;display:flex;flex-direction:column;justify-content:flex-end;height:60px">
+        <div title="${i}h : ${v} session${v>1?"s":""}" style="background:${bg};border-radius:2px 2px 0 0;height:${h}px;transition:height .4s cubic-bezier(.34,1.56,.64,1);cursor:default" onmouseenter="this.style.opacity='.75'" onmouseleave="this.style.opacity='1'"></div>
+      </div>`;
+    }).join("");
+  }
+
+  // Mettre à jour le sous-titre
+  const sub = document.getElementById("heatmapSub");
+  if(sub){
+    const label = !limitHours || limitHours===0 ? "toutes les données"
+      : limitHours < 48 ? `les ${limitHours} dernières heures`
+      : `les ${limitHours/24} derniers jours`;
+    sub.textContent = `Distribution par heure et par jour — ${label}`;
   }
 }
 
@@ -806,7 +888,7 @@ async function loadAll(){
     sb.from("sessions").select("*").gte("started_at", iso).order("started_at", { ascending: false }),
     sb.from("events").select("*").gte("created_at", iso).order("created_at", { ascending: false }),
     sb.from("utm_links").select("*").order("created_at", { ascending: false }),
-    sb.from("visitors").select("*").gte("first_seen", iso)
+    sb.from("visitors").select("*")  // pas de filtre date : on veut TOUS les visiteurs pour détecter les retours
   ]);
 
   const S = sessions  || [];
@@ -878,31 +960,26 @@ function renderOverview(S, E, V){
 // ── VISITORS ──────────────────────────────────────────
 function renderVisitors(S, E, V){
   // ── Nouveaux vs Retour ──
-  // Logique fiable : un visitor_id qui apparaît dans plusieurs sessions = retour
-  // Un visitor_id qui n'apparaît qu'une fois dans la période = nouveau (pour cette période)
-  // Mais surtout : on compare uniqueVisitors vs totalSessions
-  const visitorSessionCount = {};
-  S.forEach(s => {
-    if(!s.visitor_id) return;
-    visitorSessionCount[s.visitor_id] = (visitorSessionCount[s.visitor_id]||0) + 1;
+  // V contient TOUS les visiteurs (sans filtre date)
+  // Un visiteur est "retour" si son first_seen est AVANT la période courante
+  // Un visiteur est "nouveau" si son first_seen est DANS la période courante
+  const visitorMap = {};
+  V.forEach(v => { visitorMap[v.visitor_id] = v; });
+
+  const since = new Date();
+  if(currentRange < 9999) since.setDate(since.getDate() - currentRange);
+  else since.setFullYear(2020,0,1);
+
+  // Visiteurs uniques dans les sessions de la période
+  const uniqVids = [...new Set(S.map(s=>s.visitor_id).filter(Boolean))];
+  let newCount = 0, retCount = 0;
+  uniqVids.forEach(vid => {
+    const v = visitorMap[vid];
+    if(!v) { newCount++; return; } // pas dans la table = nouveau
+    const firstSeen = new Date(v.first_seen);
+    if(firstSeen >= since) newCount++;  // first_seen dans la période = nouveau
+    else retCount++;                    // first_seen avant = retour
   });
-  // Visiteurs avec 1 seule session dans la période → probablement nouveaux
-  // Visiteurs avec 2+ sessions → retours (ont revisité)
-  // On croise aussi avec V (first_seen dans la période = vraiment nouveau)
-  const allVids = Object.keys(visitorSessionCount);
-  const totalUniq = allVids.length;
-  // Retours = visiteurs dont first_seen est AVANT la période (pas dans V filtré par first_seen>=iso)
-  const newVidSet = new Set(V.filter(v=>v.is_new===true || v.is_new==="true").map(v=>v.visitor_id));
-  // Si V est vide (tous anciens), compter via multi-sessions
-  let newCount, retCount;
-  if(newVidSet.size > 0){
-    newCount = allVids.filter(vid => newVidSet.has(vid)).length;
-    retCount = totalUniq - newCount;
-  } else {
-    // Fallback : 1 seule session = nouveau, 2+ = retour
-    newCount = allVids.filter(vid => visitorSessionCount[vid] === 1).length;
-    retCount = allVids.filter(vid => visitorSessionCount[vid] > 1).length;
-  }
   buildDoughnut("newReturnChart",["Nouveaux","Retour"],[newCount, retCount],["#1f3a8a","#6b9ef8"]);
 
   // ── Top browsers → div#browserList (liste HTML) ──
@@ -922,10 +999,9 @@ function renderVisitors(S, E, V){
       </div>`).join("") || '<p style="color:var(--txt3);font-size:.75rem">Aucune donnée</p>';
   }
 
-  // ── Heures de pointe → div#heatmapGrid ── (délégué à renderHeatmap)
+  // ── Heures de pointe ── (délégué à renderHeatmap)
   window._allSessions = S;
-  // Réinitialiser le bouton actif heatmap si nécessaire
-  if(!window._heatmapHours) window._heatmapHours = 24;
+  if(window._heatmapHours === undefined) window._heatmapHours = 0;
   renderHeatmap(window._heatmapHours);
 
   // ── Tableau sessions ──
