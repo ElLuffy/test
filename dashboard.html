@@ -402,9 +402,13 @@
               <div class="chart-sub" id="heatmapSub">Visites par heure sur les 24 dernières heures</div>
             </div>
             <div class="date-range" style="margin:0">
+              <button class="date-btn" id="hm-1"   onclick="setHeatmapRange(1,this)">1h</button>
+              <button class="date-btn" id="hm-6"   onclick="setHeatmapRange(6,this)">6h</button>
+              <button class="date-btn" id="hm-12"  onclick="setHeatmapRange(12,this)">12h</button>
               <button class="date-btn active" id="hm-24" onclick="setHeatmapRange(24,this)">24h</button>
-              <button class="date-btn" id="hm-48" onclick="setHeatmapRange(48,this)">48h</button>
-              <button class="date-btn" id="hm-72" onclick="setHeatmapRange(72,this)">72h</button>
+              <button class="date-btn" id="hm-48"  onclick="setHeatmapRange(48,this)">48h</button>
+              <button class="date-btn" id="hm-72"  onclick="setHeatmapRange(72,this)">72h</button>
+              <button class="date-btn" id="hm-168" onclick="setHeatmapRange(168,this)">7j</button>
             </div>
           </div>
           <div class="heatmap-grid" id="heatmapGrid"></div>
@@ -873,17 +877,33 @@ function renderOverview(S, E, V){
 
 // ── VISITORS ──────────────────────────────────────────
 function renderVisitors(S, E, V){
-  // ── Nouveaux vs Retour → canvas newReturnChart ──
-  // Fix: un visiteur est "retour" si is_new===false (pas juste absent de V)
-  const visitorMap = {};
-  V.forEach(v => { visitorMap[v.visitor_id] = v; });
-  let newSessions = 0, backSessions = 0;
+  // ── Nouveaux vs Retour ──
+  // Logique fiable : un visitor_id qui apparaît dans plusieurs sessions = retour
+  // Un visitor_id qui n'apparaît qu'une fois dans la période = nouveau (pour cette période)
+  // Mais surtout : on compare uniqueVisitors vs totalSessions
+  const visitorSessionCount = {};
   S.forEach(s => {
-    const v = visitorMap[s.visitor_id];
-    if(v && v.is_new === true) newSessions++;
-    else backSessions++;
+    if(!s.visitor_id) return;
+    visitorSessionCount[s.visitor_id] = (visitorSessionCount[s.visitor_id]||0) + 1;
   });
-  buildDoughnut("newReturnChart",["Nouveaux","Retour"],[newSessions,backSessions],["#1f3a8a","#6b9ef8"]);
+  // Visiteurs avec 1 seule session dans la période → probablement nouveaux
+  // Visiteurs avec 2+ sessions → retours (ont revisité)
+  // On croise aussi avec V (first_seen dans la période = vraiment nouveau)
+  const allVids = Object.keys(visitorSessionCount);
+  const totalUniq = allVids.length;
+  // Retours = visiteurs dont first_seen est AVANT la période (pas dans V filtré par first_seen>=iso)
+  const newVidSet = new Set(V.filter(v=>v.is_new===true || v.is_new==="true").map(v=>v.visitor_id));
+  // Si V est vide (tous anciens), compter via multi-sessions
+  let newCount, retCount;
+  if(newVidSet.size > 0){
+    newCount = allVids.filter(vid => newVidSet.has(vid)).length;
+    retCount = totalUniq - newCount;
+  } else {
+    // Fallback : 1 seule session = nouveau, 2+ = retour
+    newCount = allVids.filter(vid => visitorSessionCount[vid] === 1).length;
+    retCount = allVids.filter(vid => visitorSessionCount[vid] > 1).length;
+  }
+  buildDoughnut("newReturnChart",["Nouveaux","Retour"],[newCount, retCount],["#1f3a8a","#6b9ef8"]);
 
   // ── Top browsers → div#browserList (liste HTML) ──
   const bMap = {};
@@ -1034,19 +1054,21 @@ function renderScroll(E, S){
     { label:"100%",   min:100, max:Infinity,  color:"#22c55e" },
   ];
   depthDef.forEach(b=>{ b.count = maxVals.filter(v=>v>=b.min && v<=b.max).length; });
+  const dMax   = Math.max(...depthDef.map(b=>b.count), 1);
   const dTotal = Math.max(totalSessions, 1);
 
   const depthBars = document.getElementById("depthBars");
   if(depthBars){
     depthBars.innerHTML = depthDef.map(b=>{
-      const barW = Math.round((b.count/dTotal)*100);
+      const barW = Math.round((b.count/dMax)*100);   // relatif au bucket le plus haut
+      const pct  = Math.round((b.count/dTotal)*100); // % du total affiché à droite
       return `<div style="margin-bottom:1rem">
         <div style="display:flex;align-items:center;gap:.75rem">
           <span style="font-size:.73rem;font-weight:600;color:var(--txt);width:58px">${b.label}</span>
           <div style="flex:1;background:rgba(255,255,255,.06);border-radius:6px;height:12px;overflow:hidden">
             <div style="width:${barW}%;background:${b.color};height:12px;border-radius:6px;transition:width .7s cubic-bezier(.34,1.56,.64,1)"></div>
           </div>
-          <span style="font-size:.68rem;font-family:var(--font-mono);color:var(--txt3);min-width:90px;text-align:right;white-space:nowrap">${b.count} sess. · ${barW}%</span>
+          <span style="font-size:.68rem;font-family:var(--font-mono);color:var(--txt3);min-width:90px;text-align:right;white-space:nowrap">${b.count} sess. · ${pct}%</span>
         </div>
       </div>`;
     }).join("");
@@ -1069,14 +1091,14 @@ function renderScroll(E, S){
   ];
   timeDef.forEach(b=>{ b.count = pvTimes.filter(b.fn).length; });
   const tMax  = Math.max(...timeDef.map(b=>b.count), 1);
-  const tTot  = pvTimes.length || 1;
+  const tTot  = Math.max(pvTimes.length, 1);
 
-  // Barres horizontales temps
+  // Barres horizontales temps — même présentation que profondeur de scroll
   const td = document.getElementById("timeBars");
   if(td){
     td.innerHTML = timeDef.map(b=>{
-      const barW = Math.round((b.count/tMax)*100);
-      const pct  = Math.round((b.count/tTot)*100);
+      const barW = Math.round((b.count/tMax)*100);   // largeur relative au max (comme scroll)
+      const pct  = Math.round((b.count/tTot)*100);   // % du total affiché à droite
       return `<div style="margin-bottom:1rem">
         <div style="display:flex;align-items:center;gap:.75rem">
           <span style="font-size:.73rem;font-weight:600;color:var(--txt);width:58px">${b.label}</span>
