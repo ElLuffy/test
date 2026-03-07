@@ -121,7 +121,7 @@
     .heatmap-grid{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;padding:0 .2rem}
     .hm-cell{height:28px;border-radius:3px;transition:all var(--tr);cursor:default;position:relative}
     .hm-cell:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 5px);left:50%;transform:translateX(-50%);background:rgba(0,0,0,.9);color:#fff;font-size:.62rem;white-space:nowrap;padding:.2rem .5rem;border-radius:4px;pointer-events:none;z-index:99}
-    .hm-labels{display:grid;grid-template-columns:repeat(24,1fr);gap:3px;padding:.4rem .2rem 0}
+    .hm-labels{display:flex;justify-content:space-between;padding:.4rem .2rem 0}
     .hm-label{font-family:var(--font-mono);font-size:.5rem;color:var(--txt3);text-align:center}
 
     /* ── SCROLL DEPTH ── */
@@ -348,6 +348,7 @@
           <button class="date-btn" onclick="setRange(7,this)">7j</button>
           <button class="date-btn active" onclick="setRange(30,this)">30j</button>
           <button class="date-btn" onclick="setRange(90,this)">90j</button>
+          <button class="date-btn" onclick="setRange(9999,this)">Tout</button>
         </div>
         <div style="display:flex;align-items:center;gap:.4rem">
           <div class="live-dot"></div>
@@ -395,7 +396,17 @@
       <!-- ── PAGE: VISITORS ── -->
       <div class="page" id="page-visitors">
         <div class="chart-card full-row">
-          <div class="chart-header"><div><div class="chart-title">Heures de pointe</div><div class="chart-sub">Nombre de visites par heure (0h–23h)</div></div></div>
+          <div class="chart-header" style="justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:.5rem">
+            <div>
+              <div class="chart-title">Heures de pointe</div>
+              <div class="chart-sub" id="heatmapSub">Visites par heure sur les 24 dernières heures</div>
+            </div>
+            <div class="date-range" style="margin:0">
+              <button class="date-btn active" id="hm-24" onclick="setHeatmapRange(24,this)">24h</button>
+              <button class="date-btn" id="hm-48" onclick="setHeatmapRange(48,this)">48h</button>
+              <button class="date-btn" id="hm-72" onclick="setHeatmapRange(72,this)">72h</button>
+            </div>
+          </div>
           <div class="heatmap-grid" id="heatmapGrid"></div>
           <div class="hm-labels" id="heatmapLabels"></div>
         </div>
@@ -702,6 +713,51 @@ function showPage(id, el){
   });
 }
 
+function setHeatmapRange(hours, el){
+  window._heatmapHours = hours;
+  document.querySelectorAll("[id^='hm-']").forEach(b=>b.classList.remove("active"));
+  if(el) el.classList.add("active");
+  const sub = document.getElementById("heatmapSub");
+  if(sub) sub.textContent = `Visites par heure sur les ${hours} dernières heures`;
+  renderHeatmap(hours);
+}
+
+function renderHeatmap(limitHours){
+  const S = window._allSessions || [];
+  const grid = document.getElementById("heatmapGrid");
+  const lbls = document.getElementById("heatmapLabels");
+  if(!grid) return;
+
+  const now = new Date();
+  const cutoff = new Date(now.getTime() - limitHours * 3600000);
+
+  // Filter sessions within window
+  const filtered = S.filter(s => {
+    if(!s.started_at) return false;
+    return new Date(s.started_at) >= cutoff;
+  });
+
+  // Build 24 slots (real hours 0–23, not relative)
+  const hours = Array(24).fill(0);
+  filtered.forEach(s => {
+    const h = s.hour_of_day;
+    if(h != null && h >= 0 && h < 24) hours[h]++;
+  });
+
+  const hMax = Math.max(...hours, 1);
+  grid.innerHTML = hours.map((v, i) => {
+    const pct = v / hMax;
+    const bg = pct > 0.7 ? "#f0cc4e" : pct > 0.4 ? "#1f3a8a" : pct > 0.1 ? "rgba(31,58,138,.4)" : "rgba(255,255,255,.04)";
+    return `<div title="${i}h : ${v} session${v>1?"s":""}" style="background:${bg};border-radius:3px;aspect-ratio:1;transition:transform .15s;cursor:default" onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'"></div>`;
+  }).join("");
+
+  if(lbls){
+    lbls.innerHTML = [0,3,6,9,12,15,18,21,23].map(h =>
+      `<span style="font-size:.6rem;color:var(--txt3)">${h}h</span>`
+    ).join("");
+  }
+}
+
 function setRange(days, el){
   currentRange = days;
   document.querySelectorAll(".date-btn").forEach(b => b.classList.remove("active"));
@@ -711,6 +767,10 @@ function setRange(days, el){
 }
 
 function updateTopSub(){
+  if(currentRange >= 9999){
+    document.getElementById("topSub").textContent = "Toutes les données disponibles";
+    return;
+  }
   const end = new Date(); const start = new Date();
   start.setDate(start.getDate() - currentRange);
   document.getElementById("topSub").textContent =
@@ -730,7 +790,11 @@ function fmtFull(d){ return new Date(d).toLocaleString("fr-FR",{day:"2-digit",mo
 // ── LOAD ALL DATA ─────────────────────────────────────
 async function loadAll(){
   const since = new Date();
-  since.setDate(since.getDate() - currentRange);
+  if(currentRange < 9999){
+    since.setDate(since.getDate() - currentRange);
+  } else {
+    since.setFullYear(2020, 0, 1); // début absolu
+  }
   const iso = since.toISOString();
 
   // Charger sessions + events + utm_links en parallèle
@@ -792,7 +856,8 @@ function renderOverview(S, E, V){
 
   // Courbe de trafic journalière
   const days = {}; const labels = [];
-  for(let i = currentRange-1; i >= 0; i--){
+  const effectiveRange = currentRange >= 9999 ? 90 : currentRange; // pour "Tout", afficher les 90 derniers jours
+  for(let i = effectiveRange-1; i >= 0; i--){
     const d = new Date(); d.setDate(d.getDate()-i);
     const k = d.toISOString().split("T")[0];
     days[k] = 0; labels.push(fmtShort(d));
@@ -809,8 +874,15 @@ function renderOverview(S, E, V){
 // ── VISITORS ──────────────────────────────────────────
 function renderVisitors(S, E, V){
   // ── Nouveaux vs Retour → canvas newReturnChart ──
-  const newSessions  = S.filter(s => V.find(v=>v.visitor_id===s.visitor_id && v.is_new)).length;
-  const backSessions = S.length - newSessions;
+  // Fix: un visiteur est "retour" si is_new===false (pas juste absent de V)
+  const visitorMap = {};
+  V.forEach(v => { visitorMap[v.visitor_id] = v; });
+  let newSessions = 0, backSessions = 0;
+  S.forEach(s => {
+    const v = visitorMap[s.visitor_id];
+    if(v && v.is_new === true) newSessions++;
+    else backSessions++;
+  });
   buildDoughnut("newReturnChart",["Nouveaux","Retour"],[newSessions,backSessions],["#1f3a8a","#6b9ef8"]);
 
   // ── Top browsers → div#browserList (liste HTML) ──
@@ -830,22 +902,11 @@ function renderVisitors(S, E, V){
       </div>`).join("") || '<p style="color:var(--txt3);font-size:.75rem">Aucune donnée</p>';
   }
 
-  // ── Heures de pointe → div#heatmapGrid ──
-  const hours = Array(24).fill(0);
-  S.forEach(s=>{ const h = s.hour_of_day; if(h!=null && h>=0 && h<24) hours[h]++; });
-  const hMax = Math.max(...hours, 1);
-  const grid = document.getElementById("heatmapGrid");
-  const lbls = document.getElementById("heatmapLabels");
-  if(grid){
-    grid.innerHTML = hours.map((v,i)=>{
-      const pct = v/hMax;
-      const bg  = pct > 0.7 ? "#f0cc4e" : pct > 0.4 ? "#1f3a8a" : pct > 0.1 ? "rgba(31,58,138,.4)" : "rgba(255,255,255,.04)";
-      return `<div title="${i}h : ${v} session${v>1?"s":""}" style="background:${bg};border-radius:3px;aspect-ratio:1;transition:transform .15s;cursor:default" onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'"></div>`;
-    }).join("");
-  }
-  if(lbls){
-    lbls.innerHTML = [0,6,12,18,23].map(h=>`<span style="font-size:.6rem;color:var(--txt3)">${h}h</span>`).join("");
-  }
+  // ── Heures de pointe → div#heatmapGrid ── (délégué à renderHeatmap)
+  window._allSessions = S;
+  // Réinitialiser le bouton actif heatmap si nécessaire
+  if(!window._heatmapHours) window._heatmapHours = 24;
+  renderHeatmap(window._heatmapHours);
 
   // ── Tableau sessions ──
   const tbody = document.getElementById("visitorTable");
@@ -985,7 +1046,7 @@ function renderScroll(E, S){
           <div style="flex:1;background:rgba(255,255,255,.06);border-radius:6px;height:12px;overflow:hidden">
             <div style="width:${barW}%;background:${b.color};height:12px;border-radius:6px;transition:width .7s cubic-bezier(.34,1.56,.64,1)"></div>
           </div>
-          <span style="font-size:.68rem;font-family:var(--font-mono);color:var(--txt3);width:90px;text-align:right">${b.count} sess. · ${barW}%</span>
+          <span style="font-size:.68rem;font-family:var(--font-mono);color:var(--txt3);min-width:90px;text-align:right;white-space:nowrap">${b.count} sess. · ${barW}%</span>
         </div>
       </div>`;
     }).join("");
@@ -1022,7 +1083,7 @@ function renderScroll(E, S){
           <div style="flex:1;background:rgba(255,255,255,.06);border-radius:6px;height:12px;overflow:hidden">
             <div style="width:${barW}%;background:${b.color};height:12px;border-radius:6px;transition:width .7s cubic-bezier(.34,1.56,.64,1)"></div>
           </div>
-          <span style="font-size:.68rem;font-family:var(--font-mono);color:var(--txt3);width:90px;text-align:right">${b.count} sess. · ${pct}%</span>
+          <span style="font-size:.68rem;font-family:var(--font-mono);color:var(--txt3);min-width:90px;text-align:right;white-space:nowrap">${b.count} sess. · ${pct}%</span>
         </div>
       </div>`;
     }).join("");
@@ -1140,7 +1201,8 @@ function renderSources(S, E){
   // sourceLineChart — évolution trafic par source dans le temps
   const topSrc = labels.slice(0,4);
   const dayKeys = []; const dayMap = {};
-  for(let i=currentRange-1;i>=0;i--){
+  const srcRange = currentRange >= 9999 ? 90 : currentRange;
+  for(let i=srcRange-1;i>=0;i--){
     const d=new Date(); d.setDate(d.getDate()-i);
     const k=d.toISOString().split("T")[0];
     dayKeys.push(k); dayMap[k]={};
@@ -1237,7 +1299,9 @@ function resetLocalTracking(){
 }
 
 async function exportCSV(){
-  const since = new Date(); since.setDate(since.getDate()-currentRange);
+  const since = new Date();
+  if(currentRange >= 9999) since.setFullYear(2020,0,1);
+  else since.setDate(since.getDate()-currentRange);
   const { data:v } = await sb.from("sessions").select("*").gte("started_at",since.toISOString());
   if(!v||!v.length){ alert("Aucune donnée à exporter."); return; }
 
@@ -1270,8 +1334,8 @@ function chartOpts(){
     responsive:true, maintainAspectRatio:true,
     plugins:{ legend:{ display:false }, tooltip:{ backgroundColor:"rgba(0,0,0,.85)", titleFont:{family:"JetBrains Mono",size:11}, bodyFont:{family:"JetBrains Mono",size:11}, padding:10, cornerRadius:6 } },
     scales:{
-      x:{ grid:{ color:"rgba(255,255,255,.04)" }, ticks:{ color:"rgba(241,245,249,.35)", font:{family:"JetBrains Mono",size:10}, maxTicksLimit:10 } },
-      y:{ grid:{ color:"rgba(255,255,255,.04)" }, ticks:{ color:"rgba(241,245,249,.35)", font:{family:"JetBrains Mono",size:10} }, beginAtZero:true }
+      x:{ grid:{ color:"rgba(255,255,255,.04)" }, ticks:{ color:"rgba(241,245,249,.35)", font:{family:"JetBrains Mono",size:10}, maxTicksLimit:8, maxRotation:0 } },
+      y:{ grid:{ color:"rgba(255,255,255,.04)" }, ticks:{ color:"rgba(241,245,249,.35)", font:{family:"JetBrains Mono",size:10}, maxTicksLimit:5, callback: v => v >= 1000 ? (v/1000).toFixed(1)+"k" : v }, beginAtZero:true }
     }
   };
 }
