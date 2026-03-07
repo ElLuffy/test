@@ -140,8 +140,8 @@
     .step-content{flex:1;padding-top:.6rem}
     .step-title{font-family:var(--font-title);font-weight:700;font-size:1rem;margin-bottom:.4rem}
     .step-desc{font-size:.875rem;color:var(--text-secondary);line-height:1.6}
-    .step-tag{display:inline-block;margin-top:.7rem;padding:.2rem .65rem;background:rgba(31,58,138,.1);color:var(--blue);font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-radius:2px}
-    .step-tag.gold{background:rgba(201,163,39,.12);color:#c9a327}
+    .step-tag{display:inline-block;margin-top:.7rem;padding:.2rem .65rem;background:rgba(31,58,138,.15);color:rgba(99,140,255,.85);font-size:.68rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;border-radius:2px;border:1px solid rgba(31,58,138,.25);}
+    .step-tag.gold{background:rgba(201,163,39,.14);color:rgba(201,163,39,.85);border-color:rgba(201,163,39,.28);}
     .process-cta-block{margin-top:2.5rem;padding:2.5rem;background:var(--blue);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:2rem;flex-wrap:wrap}
     .process-cta-text h3{font-family:var(--font-title);font-weight:800;font-size:1.3rem;color:#fff;margin-bottom:.3rem}
     .process-cta-text p{font-size:.875rem;color:rgba(255,255,255,.7)}
@@ -1442,7 +1442,7 @@
         const r = card.getBoundingClientRect();
         const x = (e.clientX - r.left) / r.width  - 0.5;
         const y = (e.clientY - r.top)  / r.height - 0.5;
-        card.style.transform = `perspective(600px) rotateY(${x * 10}deg) rotateX(${-y * 8}deg) scale(1.02)`;
+        card.style.transform = `perspective(800px) rotateY(${x * 4}deg) rotateX(${-y * 3}deg) scale(1.01)`;
       });
       card.addEventListener('mouseleave', () => {
         card.style.transform = '';
